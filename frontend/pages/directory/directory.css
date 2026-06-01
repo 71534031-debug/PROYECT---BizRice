@@ -1,0 +1,72 @@
+.sticky-sidebar { top: 80px; }
+
+.list-group .list-group-item {
+  border: none;
+  padding: 0.4rem 0;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #495057;
+  background: transparent;
+  transition: color 0.15s ease;
+}
+
+.list-group .list-group-item:hover {
+  color: var(--bizrise-primary);
+}
+
+.list-group .list-group-item.active {
+  color: var(--bizrise-primary);
+  font-weight: 600;
+  background: transparent;
+}
+
+.list-group .list-group-item .badge {
+  font-size: 0.75rem;
+}
+
+.business-card {
+  border: none;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  height: 100%;
+}
+
+.business-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1) !important;
+}
+
+.business-card .card-img-top {
+  height: 180px;
+  object-fit: cover;
+}
+
+.business-card .card-body {
+  padding: 1rem;
+}
+
+.business-card .card-title {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.business-card .card-text {
+  font-size: 0.85rem;
+}
+
+.pagination .page-link {
+  color: var(--bizrise-primary);
+  border-radius: 8px;
+  margin: 0 2px;
+  border: none;
+}
+
+.pagination .page-item.active .page-link {
+  background-color: var(--bizrise-primary);
+  color: #fff;
+}
+
+.pagination .page-item.disabled .page-link {
+  color: #adb5bd;
+}

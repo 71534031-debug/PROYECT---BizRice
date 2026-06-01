@@ -1,0 +1,46 @@
+<nav class="admin-sidebar">
+  <div class="px-4 py-4 border-bottom">
+    <a href="/pages/admin/dashboard.html" class="text-decoration-none d-flex align-items-center gap-3">
+      <div class="brand-icon">
+        <i class="bi bi-trending-up fs-5"></i>
+      </div>
+      <div>
+        <span class="fw-black fs-6 text-primary d-block lh-1">BizRise</span>
+        <small class="text-muted brand-subtitle">Huancayo</small>
+      </div>
+    </a>
+  </div>
+
+  <div class="px-3 py-3 d-flex flex-column flex-grow-1">
+    <ul class="nav flex-column gap-1" id="admin-sidebar-links">
+      <li class="nav-item">
+        <a href="/pages/admin/dashboard.html" class="nav-link" data-page="dashboard">
+          <i class="bi bi-grid-1x2"></i>
+          <span>Resumen</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="/pages/admin/requests.html" class="nav-link" data-page="requests">
+          <i class="bi bi-clipboard-data"></i>
+          <span>Solicitudes</span>
+          <span class="badge bg-warning text-dark rounded-pill ms-auto d-none" id="pendientes-badge">0</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="/pages/admin/users.html" class="nav-link" data-page="users">
+          <i class="bi bi-people"></i>
+          <span>Usuarios</span>
+        </a>
+      </li>
+    </ul>
+
+    <div class="mt-auto">
+      <div class="border-top pt-3">
+        <button class="btn btn-outline-danger btn-sm w-100 d-flex align-items-center justify-content-center gap-2" id="btn-logout-admin">
+          <i class="bi bi-box-arrow-right"></i>
+          <span class="small">Cerrar Sesion</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</nav>

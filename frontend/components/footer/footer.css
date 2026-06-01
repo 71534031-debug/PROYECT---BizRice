@@ -1,0 +1,13 @@
+footer a:hover {
+  color: var(--bizrise-primary-light) !important;
+}
+
+footer h5 i {
+  color: var(--bizrise-primary);
+}
+
+footer h6 {
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+}

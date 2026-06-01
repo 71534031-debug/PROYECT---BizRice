@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# Backend generated
+backend/__pycache__/
+backend/*.log
+backend/error.txt
+backend/output.txt
+backend/.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Generated reports
+docs/progress/
+API-INVENTORY.md
+DATABASE-VERIFICATION.md
+FINAL-AUDIT.md
+FRONTEND-INVENTORY.md
+PROGRESO_PROYECTO.md
+PROJECT-TREE.md
+RELEASE-NOTES.md
+TEST-REPORT.md

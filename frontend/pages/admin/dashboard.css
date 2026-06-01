@@ -1,0 +1,69 @@
+/* Admin Dashboard */
+
+#stats-cards .stats-card {
+  border-radius: 14px;
+}
+
+.chart-bars-container {
+  padding-bottom: 28px;
+}
+
+.chart-bar {
+  flex: 1;
+  border-radius: 6px 6px 0 0;
+  min-width: 28px;
+  background: var(--bizrise-primary);
+  transition: height 0.3s ease;
+  position: relative;
+}
+
+.chart-bar-label {
+  position: absolute;
+  bottom: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.65rem;
+  color: #6c757d;
+  white-space: nowrap;
+}
+
+.support-card {
+  background: linear-gradient(135deg, #630ed4 0%, #4f0baa 100%);
+  border: none;
+}
+
+.support-card .circle-bg-1 {
+  width: 80px;
+  height: 80px;
+  background: rgba(255,255,255,0.08);
+  position: absolute;
+  border-radius: 50%;
+  right: -20px;
+  bottom: -20px;
+}
+
+.support-card .circle-bg-2 {
+  width: 40px;
+  height: 40px;
+  background: rgba(255,255,255,0.06);
+  position: absolute;
+  border-radius: 50%;
+  right: 30px;
+  top: 10px;
+}
+
+.admin-name-text {
+  font-family: 'Inter', sans-serif;
+}
+
+.support-card-body {
+  z-index: 1;
+}
+
+.support-card-text {
+  font-size: 0.95rem;
+}
+
+.status-online-text {
+  font-size: 0.65rem;
+}

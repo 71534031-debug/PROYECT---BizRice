@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="400" viewBox="0 0 800 400">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f3eeff"/>
+      <stop offset="100%" stop-color="#eaddff"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="400" fill="url(#bg)"/>
+  <g transform="translate(400,180)" text-anchor="middle">
+    <text x="0" y="-30" font-family="system-ui,sans-serif" font-size="80" font-weight="700" fill="#630ed4" opacity="0.3">Biz</text>
+    <text x="85" y="-30" font-family="system-ui,sans-serif" font-size="80" font-weight="300" fill="#630ed4" opacity="0.3">Rise</text>
+    <text x="0" y="20" font-family="system-ui,sans-serif" font-size="16" fill="#7c3aed" opacity="0.5">Huancayo - Perú</text>
+  </g>
+</svg>

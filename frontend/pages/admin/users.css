@@ -1,0 +1,13 @@
+/* Admin — Usuarios */
+
+#users-counters .stats-card {
+  border-radius: 14px;
+}
+
+.admin-name-text {
+  font-family: 'Inter', sans-serif;
+}
+
+.status-online-text {
+  font-size: 0.65rem;
+}

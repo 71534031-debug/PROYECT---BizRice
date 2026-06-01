@@ -1,0 +1,30 @@
+.promo-card {
+  border: none;
+  border-radius: 12px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  height: 100%;
+}
+
+.promo-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.08) !important;
+}
+
+.promo-card .card-body {
+  padding: 1.25rem;
+}
+
+.promo-card .card-title {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.modal-content {
+  border-radius: 12px;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--bizrise-primary-light);
+  box-shadow: 0 0 0 0.2rem rgba(111, 66, 193, 0.15);
+}

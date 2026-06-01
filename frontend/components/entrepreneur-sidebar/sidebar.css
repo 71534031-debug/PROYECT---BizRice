@@ -1,0 +1,26 @@
+.sidebar .nav-link {
+  color: #495057;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sidebar .nav-link:hover {
+  background-color: var(--bizrise-primary-bg);
+  color: var(--bizrise-primary);
+}
+
+.sidebar .nav-link.active {
+  background-color: var(--bizrise-primary-bg);
+  color: var(--bizrise-primary);
+  font-weight: 600;
+}
+
+.sidebar {
+  position: sticky;
+  top: 0;
+  overflow-y: auto;
+}

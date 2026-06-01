@@ -1,0 +1,498 @@
+:root {
+  --bizrise-primary:       #630ed4;
+  --bizrise-primary-dark:  #4f0baa;
+  --bizrise-primary-light: #7c3aed;
+  --bizrise-primary-bg:    #f3eeff;
+  --bizrise-primary-fixed: #eaddff;
+  --bizrise-primary-dim:   #d2bbff;
+  --bizrise-on-primary:    #ffffff;
+  --bizrise-surface:       #f7f9fb;
+  --bizrise-surface-container: #eceef0;
+  --bizrise-on-surface:    #191c1e;
+  --bizrise-on-surface-variant: #4a4455;
+  --bizrise-secondary:     #5d5f5f;
+  --bizrise-outline:       #7b7487;
+  --bizrise-outline-variant: #ccc3d8;
+  --bizrise-error:         #ba1a1a;
+  --bizrise-error-container: #ffdad6;
+  --bizrise-sidebar-width: 260px;
+  --bizrise-font: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+body {
+  font-family: var(--bizrise-font);
+  background-color: var(--bizrise-surface);
+  color: var(--bizrise-on-surface);
+}
+
+/* Botones primarios */
+.btn-primary {
+  background-color: var(--bizrise-primary);
+  border-color: var(--bizrise-primary);
+}
+.btn-primary:hover,
+.btn-primary:focus {
+  background-color: var(--bizrise-primary-dark);
+  border-color: var(--bizrise-primary-dark);
+}
+.btn-outline-primary {
+  color: var(--bizrise-primary);
+  border-color: var(--bizrise-primary);
+}
+.btn-outline-primary:hover {
+  background-color: var(--bizrise-primary);
+  border-color: var(--bizrise-primary);
+  color: #fff;
+}
+.text-primary  { color: var(--bizrise-primary) !important; }
+.bg-primary    { background-color: var(--bizrise-primary) !important; }
+.border-primary { border-color: var(--bizrise-primary) !important; }
+
+/* Badge primario */
+.badge.bg-primary { background-color: var(--bizrise-primary) !important; }
+
+/* Links */
+a { color: var(--bizrise-primary); }
+a:hover { color: var(--bizrise-primary-dark); }
+
+/* Navbar brand */
+.navbar-brand {
+  color: var(--bizrise-primary) !important;
+  font-weight: 700;
+  font-size: 1.4rem;
+}
+
+/* Card hover general */
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+}
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0,0,0,.12) !important;
+}
+
+/* Sidebar paneles */
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  width: var(--bizrise-sidebar-width);
+  min-width: var(--bizrise-sidebar-width);
+  background: #fff;
+}
+.sidebar .nav-link {
+  color: #64748b;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+.sidebar .nav-link:hover {
+  background-color: var(--bizrise-primary-bg);
+  color: var(--bizrise-primary);
+}
+.sidebar .nav-link.active {
+  background-color: var(--bizrise-primary-bg);
+  color: var(--bizrise-primary);
+  font-weight: 600;
+}
+.sidebar .nav-link i {
+  width: 20px;
+  text-align: center;
+}
+
+/* Sidebar admin (oscura) */
+.sidebar-dark .nav-link {
+  color: rgba(255,255,255,0.8);
+}
+.sidebar-dark .nav-link:hover,
+.sidebar-dark .nav-link.active {
+  background-color: rgba(255,255,255,0.1);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Estrellas valoración */
+.stars .bi-star-fill { color: #ffc107; }
+.stars .bi-star      { color: #dee2e6; }
+.stars .bi-star-half { color: #ffc107; }
+
+/* Imagen portada negocio */
+.business-cover {
+  width: 100%;
+  height: 300px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+/* Placeholder sin imagen */
+.img-placeholder {
+  background: linear-gradient(135deg, #e8d5ff, #d4b8ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--bizrise-primary);
+  font-size: 2rem;
+  border-radius: 8px;
+}
+
+/* Toast container global */
+#toast-container {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 9999;
+}
+
+/* Loading spinner overlay */
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(255,255,255,0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9998;
+}
+
+/* Producto card imagen */
+.product-img {
+  height: 160px;
+  object-fit: cover;
+}
+
+/* Badge de stock */
+.badge-disponible { background-color: #198754; }
+.badge-bajo_stock { background-color: #ffc107; color: #000; }
+.badge-agotado    { background-color: #dc3545; }
+
+/* Utilidades */
+.cursor-pointer { cursor: pointer; }
+.cursor-not-allowed { cursor: not-allowed; }
+.readonly-bg { background: #f8f9fa; }
+.chart-bars { height: 180px; }
+.search-input { max-width: 400px; }
+.object-cover { object-fit: cover; }
+
+/* ─── Admin Global Styles ───────────────────────────────────────────── */
+
+.admin-sidebar {
+  width: var(--bizrise-sidebar-width);
+  min-width: var(--bizrise-sidebar-width);
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  overflow-y: auto;
+  background: #fff;
+  border-right: 1px solid #e9ecef;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-sidebar .brand-icon {
+  width: 36px;
+  height: 36px;
+  background: var(--bizrise-primary);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.admin-sidebar .nav-link {
+  color: #64748b;
+  border-radius: 10px;
+  padding: 0.7rem 1rem;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.admin-sidebar .nav-link:hover {
+  background-color: var(--bizrise-primary-bg);
+  color: var(--bizrise-primary);
+  transform: translateX(2px);
+}
+
+.admin-sidebar .nav-link.active {
+  background-color: var(--bizrise-primary-bg);
+  color: var(--bizrise-primary);
+  font-weight: 600;
+}
+
+.admin-sidebar .nav-link i {
+  font-size: 1.1rem;
+  width: 22px;
+  text-align: center;
+}
+
+/* Admin TopBar */
+.admin-topbar {
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid #e9ecef;
+  z-index: 1020;
+}
+
+.admin-topbar .search-wrapper {
+  max-width: 480px;
+}
+
+.admin-topbar .search-input {
+  background: #f1f3f4;
+  border: none;
+  border-radius: 24px;
+  padding: 0.45rem 1rem 0.45rem 2.5rem;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.admin-topbar .search-input:focus {
+  background: #fff;
+  box-shadow: 0 0 0 2px var(--bizrise-primary);
+  outline: none;
+}
+
+.admin-topbar .btn-notification-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  background: transparent;
+  border: none;
+  position: relative;
+  transition: background 0.2s;
+}
+
+.admin-topbar .btn-notification-icon:hover {
+  background: #f1f3f4;
+}
+
+/* Admin Footer */
+.admin-footer {
+  background: #fff;
+  border-top: 1px solid #e9ecef;
+  padding: 0.75rem 1.5rem;
+  margin-top: auto;
+}
+
+.admin-footer a {
+  color: #6c757d;
+  font-size: 0.8rem;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.admin-footer a:hover {
+  color: var(--bizrise-primary);
+}
+
+/* Status indicators */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-dot-warning { background-color: #ffc107; }
+.status-dot-success { background-color: #198754; }
+.status-dot-danger { background-color: #dc3545; }
+
+/* Stats cards admin */
+.stats-card {
+  border-radius: 14px;
+  border: none;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+  transition: transform 0.2s, box-shadow 0.2s;
+  overflow: hidden;
+}
+
+.stats-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+
+.stats-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stats-icon-primary {
+  background: var(--bizrise-primary-bg);
+  color: var(--bizrise-primary);
+}
+
+.stats-icon-warning {
+  background: rgba(255, 193, 7, 0.12);
+  color: #f59e0b;
+}
+
+.stats-icon-success {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+
+/* Trend badges */
+.trend-up {
+  color: #059669;
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.trend-neutral {
+  color: #6b7280;
+  background: rgba(107, 114, 128, 0.1);
+}
+
+/* Tabla admin */
+.admin-table {
+  font-size: 0.875rem;
+}
+
+.admin-table th {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6c757d;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.admin-table td {
+  vertical-align: middle;
+  border-bottom: 1px solid #f1f3f4;
+}
+
+.admin-table tbody tr {
+  transition: background 0.15s;
+}
+
+.admin-table tbody tr:hover {
+  background: #faf9ff;
+}
+
+/* Action buttons hover reveal */
+.action-btn-group {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+tr:hover .action-btn-group {
+  opacity: 1;
+}
+
+/* Avatar placeholder */
+.avatar-placeholder {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.user-info .user-name {
+  font-weight: 600;
+  font-size: 0.875rem;
+  line-height: 1.2;
+}
+
+.user-info .user-email {
+  font-size: 0.75rem;
+  color: #6c757d;
+}
+
+/* Avatar colors */
+.avatar-purple { background-color: #630ed4; }
+.avatar-blue { background-color: #2563eb; }
+.avatar-green { background-color: #059669; }
+.avatar-red { background-color: #dc2626; }
+.avatar-orange { background-color: #ea580c; }
+.avatar-teal { background-color: #0d9488; }
+
+/* Estado badges */
+.estado-badge {
+  font-size: 0.75rem;
+  padding: 0.25em 0.65em;
+  font-weight: 600;
+}
+
+/* Chart bars admin */
+.chart-bar {
+  flex: 1;
+  border-radius: 6px 6px 0 0;
+  min-width: 28px;
+  background: var(--bizrise-primary);
+  transition: height 0.3s ease;
+  position: relative;
+}
+
+.chart-bar-label {
+  position: absolute;
+  bottom: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.65rem;
+  color: #6c757d;
+  white-space: nowrap;
+}
+
+#chart-bars {
+  padding-bottom: 28px;
+}
+
+/* Pagination admin */
+.pagination-custom .page-link {
+  border: 1px solid #e9ecef;
+  color: #495057;
+  font-size: 0.8rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  margin: 0 2px;
+}
+
+.pagination-custom .page-link:hover {
+  background: var(--bizrise-primary-bg);
+  color: var(--bizrise-primary);
+  border-color: var(--bizrise-primary-dim);
+}
+
+.pagination-custom .page-item.active .page-link {
+  background: var(--bizrise-primary);
+  border-color: var(--bizrise-primary);
+  color: #fff;
+}
+
+.pagination-custom .page-item.disabled .page-link {
+  opacity: 0.5;
+  pointer-events: none;
+}

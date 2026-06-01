@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BizRise — Perfil de Negocio</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="../../assets/css/global.css">
+  <link rel="stylesheet" href="./business-profile.css">
+</head>
+<body>
+
+  <div id="navbar-container"></div>
+
+  <div id="loading-section" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Cargando...</span>
+    </div>
+  </div>
+
+  <div id="business-content" class="d-none">
+
+    <section class="hero-profile position-relative">
+      <img id="portada-img" src="../../assets/images/placeholder.svg"
+           class="business-cover" alt="Portada">
+      <div class="hero-overlay">
+        <div class="container">
+          <div class="row align-items-end">
+            <div class="col-lg-8">
+              <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-primary" id="hero-categoria"></span>
+                <span id="hero-verificado" class="d-none">
+                  <i class="bi bi-patch-check-fill text-primary"></i>
+                </span>
+                <span id="hero-estado" class="badge"></span>
+              </div>
+              <h1 class="text-white fw-bold mb-1" id="hero-nombre"></h1>
+              <div class="d-flex align-items-center gap-2 text-white-50">
+                <div class="stars" id="hero-estrellas"></div>
+                <span id="hero-puntuacion" class="fw-semibold text-white"></span>
+                <span id="hero-total-resenas"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="container py-4">
+      <div class="row">
+
+        <div class="col-lg-8">
+
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+              <h5 class="fw-bold mb-3"><i class="bi bi-info-circle"></i> Nuestra Historia</h5>
+              <p class="text-muted mb-0" id="descripcion"></p>
+            </div>
+          </div>
+
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+              <h5 class="fw-bold mb-3"><i class="bi bi-clock"></i> Horarios de Atención</h5>
+              <table class="table table-borderless mb-0" id="horarios-tabla">
+              </table>
+            </div>
+          </div>
+
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+              <h5 class="fw-bold mb-3"><i class="bi bi-box-seam"></i> Nuestros Productos</h5>
+              <div class="row g-3" id="productos-grid">
+              </div>
+            </div>
+          </div>
+
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+              <h5 class="fw-bold mb-3"><i class="bi bi-chat-square-text"></i> Reseñas</h5>
+
+              <div class="row mb-4" id="resumen-resenas">
+              </div>
+
+              <div id="resenas-lista">
+              </div>
+
+              <div id="review-form-section" class="d-none">
+                <hr>
+                <h6 class="fw-bold mb-3"><i class="bi bi-pencil-square"></i> Escribe tu reseña</h6>
+                <form id="review-form">
+                  <div class="mb-3">
+                    <label class="form-label small fw-semibold">Tu puntuación</label>
+                    <div class="star-rating">
+                      <i class="bi bi-star fs-4" data-star="1"></i>
+                      <i class="bi bi-star fs-4" data-star="2"></i>
+                      <i class="bi bi-star fs-4" data-star="3"></i>
+                      <i class="bi bi-star fs-4" data-star="4"></i>
+                      <i class="bi bi-star fs-4" data-star="5"></i>
+                    </div>
+                    <input type="hidden" id="review-puntuacion" value="0">
+                  </div>
+                  <div class="mb-3">
+                    <label for="review-contenido" class="form-label small fw-semibold">Tu comentario</label>
+                    <textarea class="form-control" id="review-contenido" rows="3"
+                              placeholder="Cuenta tu experiencia... (mín. 10 caracteres)"></textarea>
+                  </div>
+                  <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-send"></i> Publicar Reseña
+                  </button>
+                </form>
+              </div>
+
+              <div id="review-login-msg" class="d-none">
+                <hr>
+                <div class="alert alert-info">
+                  <i class="bi bi-info-circle"></i>
+                  <a href="/pages/auth/login.html" class="alert-link">Inicia sesión</a>
+                  para dejar una reseña.
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+        <div class="col-lg-4">
+          <div class="position-sticky sticky-sidebar">
+
+            <div class="card border-0 shadow-sm mb-3">
+              <div class="card-body">
+                <h6 class="fw-bold mb-3"><i class="bi bi-telephone"></i> Contactar negocio</h6>
+                <a id="telefono-link" href="#" class="btn btn-primary w-100 mb-3">
+                  <i class="bi bi-whatsapp"></i> Contactar negocio
+                </a>
+                <div class="mb-2" id="telefono-info">
+                  <small class="text-muted"><i class="bi bi-telephone"></i> </small>
+                </div>
+                <div class="mb-2">
+                  <small class="text-muted"><i class="bi bi-clock"></i> </small>
+                  <span id="horario-resumen"></span>
+                </div>
+                <div id="redes-container" class="d-flex gap-2 mt-3">
+                </div>
+              </div>
+            </div>
+
+            <div class="card border-0 shadow-sm mb-3">
+              <div class="card-body">
+                <h6 class="fw-bold mb-3"><i class="bi bi-geo-alt"></i> Ubicación</h6>
+                <p class="mb-1" id="direccion-text">No especificada</p>
+                <a id="maps-link" href="#" target="_blank" class="btn btn-outline-primary btn-sm w-100">
+                  <i class="bi bi-map"></i> Cómo llegar en Google Maps
+                </a>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <div id="footer-container"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../../assets/js/api.js"></script>
+  <script src="../../assets/js/auth.js"></script>
+  <script src="../../components/navbar/navbar.js"></script>
+  <script src="../../components/footer/footer.js"></script>
+  <script src="./business-profile.js"></script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+.sticky-sidebar { top: 80px; }
+
+.hero-profile {
+  position: relative;
+}
+
+.hero-profile .business-cover {
+  width: 100%;
+  height: 300px;
+  object-fit: cover;
+  border-radius: 0;
+}
+
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(transparent 40%, rgba(0,0,0,0.75));
+  display: flex;
+  align-items: flex-end;
+  padding-bottom: 1.5rem;
+}
+
+.star-rating i {
+  cursor: pointer;
+  color: #dee2e6;
+  transition: color 0.15s ease;
+}
+
+.star-rating i.active,
+.star-rating i:hover,
+.star-rating i:hover ~ i {
+  color: #ffc107;
+}
+
+.star-rating {
+  direction: rtl;
+  unicode-bidi: bidi-override;
+  display: inline-flex;
+}
+
+.star-rating i:hover,
+.star-rating i.active {
+  color: #ffc107;
+}
+
+.star-rating i {
+  cursor: pointer;
+  color: #dee2e6;
+  transition: color 0.15s ease;
+}
+
+.star-rating i:hover,
+.star-rating i:hover ~ i {
+  color: #ffc107;
+}
+
+.distribucion-barra {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.3rem;
+}
+
+.distribucion-barra span:first-child {
+  min-width: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.distribucion-barra .progress {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+}
+
+.distribucion-barra .progress-bar {
+  background-color: #ffc107;
+}
+
+.review-card {
+  border-bottom: 1px solid #e9ecef;
+  padding: 1rem 0;
+}
+
+.review-card:last-child {
+  border-bottom: none;
+}
+
+.product-card {
+  border: 1px solid #e9ecef;
+  border-radius: 10px;
+  overflow: hidden;
+  transition: transform 0.2s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-2px);
+}
+
+.product-card .product-img {
+  height: 140px;
+  object-fit: cover;
+  width: 100%;
+}
+
+.product-card .card-body {
+  padding: 0.75rem;
+}
+
+.product-card .card-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.product-card .precio {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--bizrise-primary);
+}
+
+#horarios-tabla td {
+  padding: 0.4rem 0;
+  font-size: 0.9rem;
+}
+
+#horarios-tabla td:last-child {
+  text-align: right;
+}

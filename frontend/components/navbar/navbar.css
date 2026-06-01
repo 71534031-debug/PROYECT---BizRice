@@ -1,0 +1,28 @@
+.navbar {
+  padding-top: 0.6rem;
+  padding-bottom: 0.6rem;
+}
+
+.navbar-brand i {
+  color: var(--bizrise-primary);
+}
+
+.nav-link {
+  font-size: 0.9rem;
+  padding: 0.5rem 0.8rem !important;
+  border-radius: 6px;
+  transition: background-color 0.15s ease;
+}
+
+.nav-link:hover {
+  background-color: var(--bizrise-primary-bg);
+}
+
+.nav-link i {
+  margin-right: 0.3rem;
+  font-size: 1rem;
+}
+
+.dropdown-item i {
+  margin-right: 0.5rem;
+}

@@ -1,0 +1,23 @@
+.card {
+  border-radius: 12px;
+}
+
+.form-control:focus {
+  border-color: var(--bizrise-primary-light);
+  box-shadow: 0 0 0 0.2rem rgba(111, 66, 193, 0.15);
+}
+
+.form-check-input:checked {
+  background-color: var(--bizrise-primary);
+  border-color: var(--bizrise-primary);
+}
+
+.form-switch .form-check-input {
+  width: 2.5em;
+  height: 1.25em;
+  margin-top: 0;
+}
+
+.form-control[readonly] {
+  opacity: 0.7;
+}

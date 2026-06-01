@@ -1,0 +1,28 @@
+.th-dia { width: 120px; font-size: 0.8rem; font-weight: 600; color: #6c757d; }
+.th-abierto { width: 80px; font-size: 0.8rem; font-weight: 600; color: #6c757d; }
+
+.preview-portada { max-height: 200px; width: 100%; object-fit: cover; }
+.preview-thumb { height: 100px; width: 100%; object-fit: cover; }
+
+#horarios-tabla th {
+
+#horarios-tabla td {
+  vertical-align: middle;
+  padding: 0.4rem 0;
+}
+
+#horarios-tabla .form-check-input:checked {
+  background-color: var(--bizrise-primary);
+  border-color: var(--bizrise-primary);
+}
+
+#portada-preview,
+#preview-thumb {
+  border-radius: 10px;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--bizrise-primary-light);
+  box-shadow: 0 0 0 0.2rem rgba(111, 66, 193, 0.15);
+}
