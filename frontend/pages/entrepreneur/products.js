@@ -92,7 +92,8 @@ function renderizarProductos(items) {
     col.innerHTML = `
       <div class="producto-card card shadow-sm ${p.activo === false ? 'opacity-50' : ''}">
         <img src="${imgSrc(p.imagen_url, p.nombre)}"
-             class="card-img-top" alt="${p.nombre}">
+             class="card-img-top" alt="${p.nombre}"
+             onerror="this.src=bizFallbackImg('${p.nombre}', 400, 300)">
         <div class="card-body d-flex flex-column">
           <span class="badge ${stockClass} align-self-start mb-1">${stockLabel}</span>
           <h6 class="card-title">${p.nombre}</h6>

@@ -156,7 +156,8 @@ async function cargarProductos() {
       col.innerHTML = `
         <div class="product-card card h-100">
           <img src="${imgSrc(p.imagen_url, p.nombre)}"
-               class="product-img" alt="${p.nombre}">
+               class="product-img" alt="${p.nombre}"
+               onerror="this.src=bizFallbackImg('${p.nombre}', 400, 300)">
           <div class="card-body">
             <span class="badge ${stockClass} mb-1">${stockLabel}</span>
             <h6 class="card-title mb-1">${p.nombre}</h6>

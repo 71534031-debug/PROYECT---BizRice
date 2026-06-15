@@ -620,6 +620,32 @@ PRODUCTOS_POR_CATEGORIA = {
     ],
 }
 
+def slugify(text):
+    """Convierte texto a slug URL-safe para usar como seed de imágenes."""
+    replacements = {
+        'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u',
+        'ñ': 'n', 'Á': 'A', 'É': 'E', 'Í': 'I', 'Ó': 'O', 'Ú': 'U',
+        'Ñ': 'N', 'ü': 'u', 'Ü': 'U',
+    }
+    for k, v in replacements.items():
+        text = text.replace(k, v)
+    result = ''.join(c if c.isalnum() or c in ' -' else '' for c in text)
+    result = result.strip().replace(' ', '-').lower()
+    # acortar si es muy largo
+    return result[:60]
+
+
+def product_image_url(prod_name: str, category: str) -> str:
+    """Genera URL de imagen para un producto usando picsum.photos con seed determinístico.
+
+    Retorna URL de imagen realista y consistente (mismo seed = misma foto).
+    El frontend puede obtener thumbnail agregando /150/150 al mismo seed.
+    Sin API key, fotos reales de alta calidad.
+    """
+    base_seed = slugify(f"{category}-{prod_name}")
+    return f"https://picsum.photos/seed/{base_seed}/400/300"
+
+
 # ─── HELPERS ───────────────────────────────────────────────────────────────
 
 def random_date(start_year=2023, end_year=2025):
@@ -648,16 +674,17 @@ def weighted_choice(items, weights):
 
 # ─── MAIN ──────────────────────────────────────────────────────────────────
 
-def seed(force=False):
+def seed():
+    force = "--force" in sys.argv
     db = SessionLocal()
     try:
         # Si hay datos y no se fuerza, omitir
         if not force and db.query(Usuario).count() > 5:
-            print("⚠️  La BD ya tiene datos. Omitiendo seed (usa force=True o --force para forzar).")
+            print("La BD ya tiene datos. Omitiendo seed (usa --force para forzar).")
             return
 
         # Forzar: limpiar datos existentes (orden inverso de FK)
-        if force or "--force" in sys.argv:
+        if force:
             if db.query(Usuario).count() > 0:
                 print("🧹 Limpiando datos existentes...")
                 db.query(DetalleVenta).delete()
@@ -672,6 +699,15 @@ def seed(force=False):
                 db.query(Usuario).delete()
                 db.commit()
                 print("   ✅ Datos anteriores eliminados.")
+
+            # Asegurar que la columna stock exista en Productos
+            from sqlalchemy import text
+            db.execute(text("""
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Productos') AND name = 'stock')
+                    ALTER TABLE Productos ADD stock INT NOT NULL DEFAULT 0;
+            """))
+            db.commit()
+            print("   ✅ Columna stock verificada en Productos.")
 
         print("🚀 Iniciando seed masivo de BizRise...")
         print("=" * 50)
@@ -866,6 +902,7 @@ def seed(force=False):
             selected = random.sample(productos_pool, num_productos)
 
             for nombre_prod, desc_prod, precio in selected:
+                img_url = product_image_url(nombre_prod, cat_name)
                 stock_qty = random.choices(
                     [random.randint(10, 200), random.randint(1, 9), 0],
                     weights=[0.75, 0.15, 0.10]
@@ -876,6 +913,7 @@ def seed(force=False):
                     nombre=nombre_prod,
                     descripcion=desc_prod,
                     precio=precio,
+                    imagen_url=img_url,
                     stock=stock_qty,
                     estado_stock=stock_status,
                     activo=True,
@@ -1058,9 +1096,9 @@ def seed(force=False):
 
         # ─── RESUMEN ───────────────────────────────────────────────────
         print("\n" + "=" * 50)
-        print("📊 RESUMEN DE CARGA:")
+        print("[RESUMEN DE CARGA]")
         print(f"   Usuarios:         {len(users)}")
-        print(f"   Categorías:       {len(CATEGORIAS)}")
+        print(f"   Categorias:       {len(CATEGORIAS)}")
         print(f"   Emprendimientos: {len(negocios_creados)}")
         print(f"   Productos:        {len(productos_creados)}")
         print(f"   Redes Sociales:   {redes_count}")
@@ -1069,16 +1107,16 @@ def seed(force=False):
         print(f"   Comentarios:      {comentarios_count}")
         print(f"   Ventas:           {ventas_count} con {detalle_count} detalles")
         print("=" * 50)
-        print("✅ Seed completado exitosamente.")
-        print("🔑 Contraseñas de usuarios demo:")
-        print("   admin@bizrise.pe    → Admin123!")
-        print("   emprendedor@bizrise.pe → Emprendedor1!")
-        print("   cliente@bizrise.pe   → Cliente1!")
-        print("   (demás usuarios:       BizRise2024!)")
+        print("[OK] Seed completado exitosamente.")
+        print("[PASSWORDS]")
+        print("   admin@bizrise.pe    -> Admin123!")
+        print("   emprendedor@bizrise.pe -> Emprendedor1!")
+        print("   cliente@bizrise.pe   -> Cliente1!")
+        print("   (demas usuarios:       BizRise2024!)")
 
     except Exception as e:
         db.rollback()
-        print(f"❌ Error durante el seed: {e}")
+        print(f"[ERROR] Seed fallo: {e}")
         raise
     finally:
         db.close()
