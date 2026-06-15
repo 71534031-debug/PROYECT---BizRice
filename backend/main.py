@@ -2,9 +2,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
+import sys
 
 from src.config.settings import settings
-from src.config.db import engine, Base
+from src.config.db import engine, Base, SessionLocal
 
 # Importar todos los modelos para que SQLAlchemy los registre
 from src.models import user, business, category, product, review, rating, promotion, social_network, sale
@@ -51,9 +52,20 @@ app.include_router(admin_controller.router,        prefix="/api/v1/admin",      
 app.include_router(sale_controller.router,         prefix="/api/v1/sales",        tags=["Ventas"])
 app.include_router(users_controller.router,        prefix="/api/v1/users",        tags=["Usuarios"])
 
+def auto_seed():
+    """Seed automático al iniciar — fuerza recarga si existe data parcial."""
+    try:
+        from seed_full import seed
+        print("🌱 Ejecutando seed automático (fuerza recarga)...")
+        seed(force=True)
+        print("✅ Seed automático completado.")
+    except Exception as e:
+        print(f"⚠️  Seed automático omitido: {e}")
+
 @app.on_event("startup")
 def startup():
     Base.metadata.create_all(bind=engine)
+    auto_seed()
 
 @app.get("/")
 def root():

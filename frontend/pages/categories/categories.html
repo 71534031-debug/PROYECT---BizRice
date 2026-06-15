@@ -14,13 +14,59 @@
 
   <div id="navbar-container"></div>
 
-  <section class="py-5">
-    <div class="container">
-      <div class="text-center mb-5">
-        <h1 class="fw-bold">Explora por Categoría</h1>
-        <p class="text-muted">Encuentra el emprendimiento perfecto para lo que necesitas</p>
+  <!-- ═══ HEADER ═══ -->
+  <section class="py-5 text-center">
+    <div class="container" style="max-width:720px">
+      <h1 class="display-5 fw-black mb-3">Explora por Categorías</h1>
+      <p class="lead text-secondary-emphasis mx-auto" style="max-width:560px">
+        Encuentra lo mejor de Huancayo organizado por sectores comerciales. Impulsamos el crecimiento local conectándote con los mejores negocios.
+      </p>
+    </div>
+  </section>
+
+  <!-- ═══ SEARCH ═══ -->
+  <section class="pb-4">
+    <div class="container" style="max-width:640px">
+      <div class="position-relative">
+        <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-4 text-secondary-emphasis"></i>
+        <input type="text" id="cat-search" class="form-control rounded-4 border-outline-variant shadow-lg py-3 ps-5"
+               placeholder="¿Qué estás buscando hoy?">
       </div>
+    </div>
+  </section>
+
+  <!-- ═══ COLECCIONES ═══ -->
+  <section class="pb-5">
+    <div class="container">
+      <h2 class="fw-bold fs-4 mb-4 d-flex align-items-center gap-2">
+        <i class="bi bi-stars text-primary"></i> Colecciones Destacadas
+      </h2>
+      <div class="row g-3 justify-content-center" id="colecciones-grid">
+        <!-- filled by JS -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ CATEGORY GRID ═══ -->
+  <section class="pb-5">
+    <div class="container">
       <div class="row g-4" id="categories-grid">
+        <!-- filled by JS -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ CTA ═══ -->
+  <section class="pb-5">
+    <div class="container">
+      <div class="rounded-4 p-5 text-center" style="background:#7c3aed">
+        <h2 class="fw-bold text-white mb-3">¿Tienes un negocio en Huancayo?</h2>
+        <p class="text-white opacity-75 mb-4 mx-auto" style="max-width:520px">
+          Únete a la red empresarial más grande de la ciudad y aumenta tu visibilidad digital hoy mismo.
+        </p>
+        <a href="/pages/auth/register.html" class="btn btn-light btn-lg px-5 py-3 rounded-3 fw-semibold shadow">
+          <i class="bi bi-plus-circle me-2"></i>Registrar mi Negocio
+        </a>
       </div>
     </div>
   </section>

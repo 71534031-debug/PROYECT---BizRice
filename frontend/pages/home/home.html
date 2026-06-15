@@ -14,78 +14,266 @@
 
   <div id="navbar-container"></div>
 
-  <section class="hero-section d-flex align-items-center">
-    <div class="container text-center text-white">
-      <h1 class="display-4 fw-bold mb-3">Descubre emprendedores locales en Huancayo</h1>
-      <p class="lead mb-4 opacity-90">Encuentra los mejores negocios, productos y servicios cerca de ti</p>
+  <!-- ═══ HERO ═══ -->
+  <section class="hero-section">
+    <div class="hero-gradient-overlay"></div>
+    <div class="container position-relative z-1 text-center text-white">
+      <h1 class="display-4 fw-black mb-4">Descubre emprendedores locales en Huancayo</h1>
+      <p class="lead mb-5 mx-auto" style="max-width:600px;opacity:0.9">
+        Conectamos la tradición del Valle del Mantaro con el futuro digital. Encuentra los mejores negocios locales en un solo lugar.
+      </p>
 
       <div class="row justify-content-center">
-        <div class="col-lg-8">
-          <div class="input-group input-group-lg shadow-sm">
-            <span class="input-group-text bg-white border-end-0">
-              <i class="bi bi-search text-muted"></i>
-            </span>
-            <input type="text" id="hero-search" class="form-control border-start-0"
-                   placeholder="¿Qué estás buscando?">
-            <select id="hero-distrito" class="form-select hero-distrito-select">
-              <option value="">Todo Huancayo</option>
-              <option value="Huancayo">Huancayo</option>
-              <option value="El Tambo">El Tambo</option>
-              <option value="Chilca">Chilca</option>
-              <option value="San Agustín">San Agustín</option>
-              <option value="Pilcomayo">Pilcomayo</option>
-            </select>
-            <button class="btn btn-primary px-4" id="hero-search-btn">
-              <i class="bi bi-search"></i> Buscar
-            </button>
+        <div class="col-lg-10 col-xl-8">
+          <div class="hero-search-card">
+            <div class="row g-0 align-items-center">
+              <div class="col-md d-flex align-items-center px-4 py-3 border-end-md">
+                <i class="bi bi-search text-primary me-3 fs-5"></i>
+                <input type="text" id="hero-search" class="form-control border-0 shadow-none px-0" placeholder="¿Qué estás buscando hoy?">
+              </div>
+              <div class="col-md-auto d-flex align-items-center px-4 py-3">
+                <i class="bi bi-geo-alt text-primary me-3 fs-5"></i>
+                <select id="hero-distrito" class="form-select border-0 shadow-none bg-transparent px-0">
+                  <option value="">Todo Huancayo</option>
+                  <option value="Huancayo">Huancayo</option>
+                  <option value="El Tambo">El Tambo</option>
+                  <option value="Chilca">Chilca</option>
+                  <option value="San Agustín">San Agustín</option>
+                  <option value="Pilcomayo">Pilcomayo</option>
+                </select>
+              </div>
+              <div class="col-md-auto p-2">
+                <button id="hero-search-btn" class="btn btn-primary px-4 py-3 rounded-3 w-100 fw-semibold">
+                  Buscar ahora
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row justify-content-center mt-5 pt-3 g-4 hero-stats">
+        <div class="col-6 col-md-3">
+          <div class="hero-stat-item">
+            <i class="bi bi-building fs-2 opacity-50 mb-1"></i>
+            <div class="counter-number text-white fw-black fs-2" id="counter-businesses">0</div>
+            <small class="opacity-75">Emprendimientos</small>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="hero-stat-item">
+            <i class="bi bi-box-seam fs-2 opacity-50 mb-1"></i>
+            <div class="counter-number text-white fw-black fs-2" id="counter-products">0</div>
+            <small class="opacity-75">Productos</small>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="hero-stat-item">
+            <i class="bi bi-grid fs-2 opacity-50 mb-1"></i>
+            <div class="counter-number text-white fw-black fs-2" id="counter-categories">0</div>
+            <small class="opacity-75">Categorías</small>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="hero-stat-item">
+            <i class="bi bi-star fs-2 opacity-50 mb-1"></i>
+            <div class="counter-number text-white fw-black fs-2" id="counter-ratings">0</div>
+            <small class="opacity-75">Valoraciones</small>
           </div>
         </div>
       </div>
     </div>
   </section>
 
+  <!-- ═══ CATEGORÍAS ═══ -->
   <section class="py-5">
     <div class="container">
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold mb-0">Explora por Categoría</h2>
-        <a href="/pages/categories/categories.html" class="btn btn-outline-primary btn-sm">
+      <div class="d-flex align-items-end justify-content-between mb-4">
+        <div>
+          <h2 class="fw-bold mb-1">Explora por Categoría</h2>
+          <p class="text-muted mb-0">Lo mejor de nuestra región a un click.</p>
+        </div>
+        <a href="/pages/categories/categories.html" class="text-primary fw-semibold text-decoration-none d-none d-md-flex align-items-center gap-1">
           Ver todas <i class="bi bi-arrow-right"></i>
         </a>
       </div>
       <div class="row g-3" id="categories-grid">
+        <!-- filled by JS -->
+      </div>
+      <div class="text-center mt-3 d-md-none">
+        <a href="/pages/categories/categories.html" class="btn btn-outline-primary btn-sm rounded-pill">Ver todas las categorías</a>
       </div>
     </div>
   </section>
 
+  <!-- ═══ CÓMO FUNCIONA ═══ -->
   <section class="py-5 bg-light">
     <div class="container">
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold mb-0">Negocios Destacados</h2>
-        <a href="/pages/directory/directory.html" class="btn btn-outline-primary btn-sm">
-          Ver todos <i class="bi bi-arrow-right"></i>
-        </a>
+      <div class="text-center mb-5">
+        <h2 class="fw-bold">Cómo funciona</h2>
+        <p class="text-muted">Tres pasos para empezar</p>
       </div>
-      <div class="row g-4" id="negocios-grid">
+      <div class="row g-4 justify-content-center">
+        <div class="col-md-4">
+          <div class="step-card text-center">
+            <div class="step-number-bg">1</div>
+            <div class="step-icon-wrapper mb-3">
+              <i class="bi bi-search fs-3"></i>
+            </div>
+            <h5 class="fw-bold">Explora</h5>
+            <p class="text-muted small">Busca entre cientos de emprendimientos locales en Huancayo y encuentra lo que necesitas</p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="step-card text-center">
+            <div class="step-number-bg">2</div>
+            <div class="step-icon-wrapper mb-3">
+              <i class="bi bi-hand-thumbs-up fs-3"></i>
+            </div>
+            <h5 class="fw-bold">Conecta</h5>
+            <p class="text-muted small">Conoce el perfil de cada emprendedor, mira sus productos y lee las opiniones de otros clientes</p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="step-card text-center">
+            <div class="step-number-bg">3</div>
+            <div class="step-icon-wrapper mb-3">
+              <i class="bi bi-cart-check fs-3"></i>
+            </div>
+            <h5 class="fw-bold">Compra</h5>
+            <p class="text-muted small">Contacta directamente con el emprendedor y apoya la economía local de la región</p>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
-  <section class="cta-section py-5">
-    <div class="container text-center text-white">
-      <h2 class="fw-bold mb-3">¿Tienes un negocio en Huancayo?</h2>
-      <p class="lead mb-4 opacity-90">Regístrate gratis y llega a más clientes en toda la región</p>
-      <div class="d-flex justify-content-center gap-3">
-        <a href="/pages/auth/register.html" class="btn btn-light btn-lg px-4">
-          <i class="bi bi-plus-circle"></i> Registrar Negocio
+  <!-- ═══ NEGOCIOS ═══ -->
+  <section class="py-5">
+    <div class="container">
+      <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+          <h2 class="fw-bold mb-1">Negocios Destacados</h2>
+          <p class="text-muted mb-0">Los mejores emprendimientos de Huancayo</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <button class="arr-btn" id="biz-scroll-left" aria-label="Anterior"><i class="bi bi-chevron-left"></i></button>
+          <button class="arr-btn" id="biz-scroll-right" aria-label="Siguiente"><i class="bi bi-chevron-right"></i></button>
+          <a href="/pages/directory/directory.html" class="btn btn-outline-primary rounded-pill px-4 btn-sm d-none d-md-inline-block ms-2">
+            Ver todos <i class="bi bi-arrow-right ms-1"></i>
+          </a>
+        </div>
+      </div>
+
+      <div id="skeleton-grid" class="row g-4">
+        <div class="col-md-4"><div class="skeleton" style="height:420px"></div></div>
+        <div class="col-md-4"><div class="skeleton" style="height:420px"></div></div>
+        <div class="col-md-4"><div class="skeleton" style="height:420px"></div></div>
+      </div>
+
+      <div class="d-none biz-scroll-wrap" id="negocios-grid">
+        <!-- filled by JS -->
+      </div>
+
+      <div class="text-center mt-4 d-md-none">
+        <a href="/pages/directory/directory.html" class="btn btn-outline-primary rounded-pill px-4">
+          Ver todos los negocios <i class="bi bi-arrow-right ms-1"></i>
         </a>
-        <a href="/pages/auth/login.html" class="btn btn-outline-light btn-lg px-4">
-          <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
-        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ TESTIMONIOS ═══ -->
+  <section class="py-5 bg-light">
+    <div class="container">
+      <div class="text-center mb-5">
+        <h2 class="fw-bold">Lo que dicen nuestros usuarios</h2>
+        <p class="text-muted">Opiniones reales de la comunidad</p>
+      </div>
+      <div class="row g-4 justify-content-center" id="testimonios-grid">
+        <div class="col-md-4">
+          <div class="testimonial-card">
+            <div class="d-flex gap-1 text-warning mb-2">
+              <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+              <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+              <i class="bi bi-star-fill"></i>
+            </div>
+            <p class="testimonial-text">"Gracias a BizRise encontré el proveedor perfecto para los eventos de mi empresa. Los emprendedores de Huancayo son increíbles."</p>
+            <div class="testimonial-author">
+              <div class="testimonial-avatar" style="background:#630ed4">M</div>
+              <div>
+                <strong class="small">María G.</strong>
+                <small class="text-muted d-block" style="font-size:0.7rem">Cliente</small>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="testimonial-card">
+            <div class="d-flex gap-1 text-warning mb-2">
+              <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+              <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+              <i class="bi bi-star-fill"></i>
+            </div>
+            <p class="testimonial-text">"Registré mi negocio en BizRise y en una semana ya tenía nuevos clientes. La plataforma es muy fácil de usar."</p>
+            <div class="testimonial-author">
+              <div class="testimonial-avatar" style="background:#059669">C</div>
+              <div>
+                <strong class="small">Carlos Q.</strong>
+                <small class="text-muted d-block" style="font-size:0.7rem">Emprendedor</small>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="testimonial-card">
+            <div class="d-flex gap-1 text-warning mb-2">
+              <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+              <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+              <i class="bi bi-star-half"></i>
+            </div>
+            <p class="testimonial-text">"Me encanta poder descubrir nuevos emprendimientos cerca de mi casa. Ahora compro productos locales y apoyo a mi comunidad."</p>
+            <div class="testimonial-author">
+              <div class="testimonial-avatar" style="background:#dc2626">L</div>
+              <div>
+                <strong class="small">Lucía M.</strong>
+                <small class="text-muted d-block" style="font-size:0.7rem">Cliente</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ CTA ═══ -->
+  <section class="py-stack-lg">
+    <div class="container">
+      <div class="cta-card position-relative overflow-hidden rounded-4 bg-primary">
+        <div class="cta-bg-shapes"></div>
+        <div class="position-relative z-1 text-center text-white px-4 py-5 py-md-stack-xl">
+          <h2 class="display-6 fw-bold mb-4">Impulsa tu negocio con BizRise</h2>
+          <p class="lead mb-5 mx-auto opacity-75" style="max-width:600px">
+            Únete a la red de emprendedores más grande de Huancayo. Digitaliza tu oferta, llega a nuevos clientes y haz crecer tu comunidad.
+          </p>
+          <div class="d-flex flex-wrap justify-content-center gap-3">
+            <a href="/pages/auth/register.html" class="btn btn-light btn-lg px-5 py-3 rounded-3 fw-semibold shadow">
+              <i class="bi bi-plus-circle me-2"></i>Registrar Negocio
+            </a>
+            <a href="/pages/auth/login.html" class="btn btn-outline-light btn-lg px-5 py-3 rounded-3 fw-semibold">
+              Hablar con asesor
+            </a>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
   <div id="footer-container"></div>
+
+  <button id="scroll-top-btn" class="scroll-top-btn" aria-label="Volver arriba">
+    <i class="bi bi-arrow-up"></i>
+  </button>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="../../assets/js/api.js"></script>

@@ -330,6 +330,177 @@ EMPRENDIMIENTOS = [
         "categoria": "Servicios",
         "horario_apertura": "08:00", "horario_cierre": "21:00"
     },
+    {
+        "nombre": "Zapatería Artesanal El Andariego",
+        "descripcion": "Calzado artesanal de cuero, zapatos, botines y sandalias hechos a mano por artesanos huancaínos con décadas de experiencia.",
+        "telefono": "967 123 456",
+        "direccion": "Jr. Puno 456",
+        "distrito": "Huancayo",
+        "categoria": "Textilería y Moda",
+        "horario_apertura": "09:00", "horario_cierre": "20:00"
+    },
+    {
+        "nombre": "Souvenirs Huanca",
+        "descripcion": "Tienda de recuerdos y artesanía huancaína, imanes, llaveros, cerámica miniature, postales y productos típicos de la región.",
+        "telefono": "967 234 567",
+        "direccion": "Calle Real 345",
+        "distrito": "Huancayo",
+        "categoria": "Artesanía",
+        "horario_apertura": "09:00", "horario_cierre": "21:00"
+    },
+    {
+        "nombre": "Academia de Música Andina Wanka",
+        "descripcion": "Clases de guitarra, charango, zampoñas, quena y canto. Talleres de música andina para todas las edades y niveles.",
+        "telefono": "967 345 678",
+        "direccion": "Av. Mariscal Castilla 1234",
+        "distrito": "El Tambo",
+        "categoria": "Servicios",
+        "horario_apertura": "09:00", "horario_cierre": "20:00"
+    },
+    {
+        "nombre": "Barbería Estilo Único",
+        "descripcion": "Barbería profesional, cortes modernos y clásicos, afeitado con navaja, tratamientos capilares y productos para el cuidado de la barba.",
+        "telefono": "967 456 789",
+        "direccion": "Av. Giráldez 234",
+        "distrito": "Huancayo",
+        "categoria": "Servicios",
+        "horario_apertura": "09:00", "horario_cierre": "21:00"
+    },
+    {
+        "nombre": "Tienda de Mascotas Patitas Felices",
+        "descripcion": "Alimentos balanceados, accesorios, juguetes, camas, ropa para mascotas y servicio de peluquería canina en Huancayo.",
+        "telefono": "967 567 890",
+        "direccion": "Jr. Junín 789",
+        "distrito": "Chilca",
+        "categoria": "Servicios",
+        "horario_apertura": "09:00", "horario_cierre": "20:00"
+    },
+    {
+        "nombre": "Yoga y Bienestar Integral",
+        "descripcion": "Clases de yoga, meditación y mindfulness. También ofrecemos masajes relajantes y terapias holísticas en un ambiente tranquilo.",
+        "telefono": "967 678 901",
+        "direccion": "Av. Panamericana 567",
+        "distrito": "El Tambo",
+        "categoria": "Servicios",
+        "horario_apertura": "06:00", "horario_cierre": "20:00"
+    },
+    {
+        "nombre": "Servicios Eléctricos Wanka",
+        "descripcion": "Instalaciones eléctricas residenciales y comerciales, reparaciones, mantenimiento y venta de materiales eléctricos de calidad.",
+        "telefono": "967 789 012",
+        "direccion": "Av. Centenario 567",
+        "distrito": "Huancayo",
+        "categoria": "Servicios",
+        "horario_apertura": "07:00", "horario_cierre": "19:00"
+    },
+    {
+        "nombre": "Carpintería Metálica San José",
+        "descripcion": "Fabricación de puertas, ventanas, rejas, estructuras metálicas y muebles de acero inoxidable. Trabajo garantizado.",
+        "telefono": "967 890 123",
+        "direccion": "Jr. Arequipa 123",
+        "distrito": "Chilca",
+        "categoria": "Servicios",
+        "horario_apertura": "07:00", "horario_cierre": "18:00"
+    },
+    {
+        "nombre": "Artículos Deportivos Wanka Sport",
+        "descripcion": "Venta de ropa deportiva, zapatillas, balones, pesas, implementos de gimnasio y accesorios para running y fitness.",
+        "telefono": "967 901 234",
+        "direccion": "Av. Ferrocarril 890",
+        "distrito": "Huancayo",
+        "categoria": "Textilería y Moda",
+        "horario_apertura": "09:00", "horario_cierre": "21:00"
+    },
+    {
+        "nombre": "Catering Delicias Huancaínas",
+        "descripcion": "Servicio de catering para eventos, bodas, cumpleaños y reuniones empresariales. Comida típica huancaína e internacional.",
+        "telefono": "968 123 456",
+        "direccion": "Av. Independencia 234",
+        "distrito": "El Tambo",
+        "categoria": "Gastronomía",
+        "horario_apertura": "07:00", "horario_cierre": "22:00"
+    },
+    {
+        "nombre": "Clases de Baile Ritmo y Sabor",
+        "descripcion": "Academia de baile, clases de salsa, bachata, merengue y danzas folclóricas peruanas. Parejas e individuales.",
+        "telefono": "968 234 567",
+        "direccion": "Calle Real 678",
+        "distrito": "Huancayo",
+        "categoria": "Servicios",
+        "horario_apertura": "10:00", "horario_cierre": "22:00"
+    },
+    {
+        "nombre": "Vivero Forestal Bosque Verde",
+        "descripcion": "Venta de plantas forestales, ornamentales, árboles frutales, sustratos y accesorios de jardinería. Asesoría técnica.",
+        "telefono": "968 345 678",
+        "direccion": "Av. Panamericana 3456",
+        "distrito": "Huancayo",
+        "categoria": "Agricultura",
+        "horario_apertura": "07:00", "horario_cierre": "17:00"
+    },
+    {
+        "nombre": "Velas Artesanales Luz Andina",
+        "descripcion": "Velas decorativas artesanales, aromáticas, de soya y cera de abeja. Productos para decoración y regalos personalizados.",
+        "telefono": "968 456 789",
+        "direccion": "Jr. Cusco 234",
+        "distrito": "Huancayo",
+        "categoria": "Artesanía",
+        "horario_apertura": "09:00", "horario_cierre": "20:00"
+    },
+    {
+        "nombre": "Lavandería y Tintorería EcoWash",
+        "descripcion": "Lavandería ecológica, lavado en seco, planchado y tintorería. Usamos productos biodegradables. Servicio a domicilio.",
+        "telefono": "968 567 890",
+        "direccion": "Av. Huancavelica 234",
+        "distrito": "Chilca",
+        "categoria": "Servicios",
+        "horario_apertura": "07:00", "horario_cierre": "21:00"
+    },
+    {
+        "nombre": "Estudio de Fotografía Momentos Eternos",
+        "descripcion": "Sesiones de fotografía profesional, bodas, quinceañeros, retratos y fotografía comercial. Estudio equipado y sets personalizados.",
+        "telefono": "968 678 901",
+        "direccion": "Av. Giráldez 456",
+        "distrito": "Huancayo",
+        "categoria": "Servicios",
+        "horario_apertura": "09:00", "horario_cierre": "19:00"
+    },
+    {
+        "nombre": "Tienda de Telas y Mercería La Costurera",
+        "descripcion": "Venta de telas, hilos, botones, cierres y todo para costura y manualidades. También ofrecemos talleres de costura básica.",
+        "telefono": "968 789 012",
+        "direccion": "Calle Real 890",
+        "distrito": "Huancayo",
+        "categoria": "Textilería y Moda",
+        "horario_apertura": "09:00", "horario_cierre": "20:00"
+    },
+    {
+        "nombre": "Reparación de Celulares y Tablets TecFix",
+        "descripcion": "Reparación de pantallas, cambio de baterías, diagnóstico de fallas y venta de accesorios para celulares y tablets.",
+        "telefono": "968 890 123",
+        "direccion": "Jr. Ayacucho 567",
+        "distrito": "Huancayo",
+        "categoria": "Tecnología",
+        "horario_apertura": "09:00", "horario_cierre": "20:00"
+    },
+    {
+        "nombre": "Tienda de Productos Naturales La Salud",
+        "descripcion": "Venta de productos naturales, hierbas medicinales, suplementos vitamínicos, té de la región y cosmética natural.",
+        "telefono": "968 901 234",
+        "direccion": "Av. Mariscal Castilla 234",
+        "distrito": "El Tambo",
+        "categoria": "Belleza",
+        "horario_apertura": "08:00", "horario_cierre": "20:00"
+    },
+    {
+        "nombre": "Clínica de Fisioterapia y Rehabilitación",
+        "descripcion": "Fisioterapia, rehabilitación física, masajes terapéuticos, electroterapia y tratamientos para lesiones deportivas y crónicas.",
+        "telefono": "968 012 345",
+        "direccion": "Av. Centenario 234",
+        "distrito": "Huancayo",
+        "categoria": "Servicios",
+        "horario_apertura": "07:00", "horario_cierre": "20:00"
+    },
 ]
 
 CATEGORIAS = [
@@ -477,15 +648,30 @@ def weighted_choice(items, weights):
 
 # ─── MAIN ──────────────────────────────────────────────────────────────────
 
-def seed():
+def seed(force=False):
     db = SessionLocal()
     try:
-        # Verificar si ya hay datos
-        if db.query(Usuario).count() > 5:
-            print("⚠️  La BD ya tiene datos. Omitiendo seed (usa seed_full.py --force para forzar).")
-            if "--force" not in sys.argv:
-                return
-            print("▶️  Forzando seed...")
+        # Si hay datos y no se fuerza, omitir
+        if not force and db.query(Usuario).count() > 5:
+            print("⚠️  La BD ya tiene datos. Omitiendo seed (usa force=True o --force para forzar).")
+            return
+
+        # Forzar: limpiar datos existentes (orden inverso de FK)
+        if force or "--force" in sys.argv:
+            if db.query(Usuario).count() > 0:
+                print("🧹 Limpiando datos existentes...")
+                db.query(DetalleVenta).delete()
+                db.query(Venta).delete()
+                db.query(Comentario).delete()
+                db.query(Valoracion).delete()
+                db.query(Promocion).delete()
+                db.query(RedSocial).delete()
+                db.query(Producto).delete()
+                db.query(Emprendimiento).delete()
+                db.query(Categoria).delete()
+                db.query(Usuario).delete()
+                db.commit()
+                print("   ✅ Datos anteriores eliminados.")
 
         print("🚀 Iniciando seed masivo de BizRise...")
         print("=" * 50)

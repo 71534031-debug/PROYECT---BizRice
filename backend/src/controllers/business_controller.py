@@ -174,7 +174,7 @@ def _get_user_from_header(authorization: str, db: Session) -> Usuario:
 @router.get("", response_model=BusinessListResponse)
 def listar_emprendimientos(
     page: int = Query(1, ge=1),
-    size: int = Query(12, ge=1, le=50),
+    size: int = Query(12, ge=1, le=100),
     busqueda: Optional[str] = None,
     categoria: Optional[int] = None,
     distrito: Optional[str] = None,

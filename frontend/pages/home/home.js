@@ -1,20 +1,31 @@
-/**
- * BIZRISE — Página de Inicio
- */
-
 const CATEGORY_ICONS = [
   'bi-cup-hot', 'bi-tools', 'bi-palette', 'bi-briefcase', 'bi-airplane', 'bi-laptop'
 ];
+
+const CATEGORY_IMAGES = {
+  'Gastronomía': 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&q=80',
+  'Textilería y Moda': 'https://images.unsplash.com/photo-1604681630513-69474a4e253f?w=400&q=80',
+  'Artesanía': 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400&q=80',
+  'Servicios': 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=400&q=80',
+  'Turismo': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&q=80',
+  'Tecnología': 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=400&q=80',
+  'Belleza': 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?w=400&q=80',
+  'Agricultura': 'https://images.unsplash.com/photo-1500651230702-0e2d8a49d4ad?w=400&q=80',
+  'Hogar': 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&q=80',
+};
 
 document.addEventListener('DOMContentLoaded', async () => {
   await loadComponent('navbar-container', '../../components/navbar/navbar.html');
   renderAuthSection();
   await loadComponent('footer-container', '../../components/footer/footer.html');
 
-  await Promise.all([
+  const [catData, bizData] = await Promise.all([
     cargarCategorias(),
     cargarNegocios()
   ]);
+
+  animarContadores(catData, bizData);
+  initScrollTop();
 
   document.getElementById('hero-search-btn').addEventListener('click', buscarDesdeHero);
   document.getElementById('hero-search').addEventListener('keydown', (e) => {
@@ -26,68 +37,169 @@ async function cargarCategorias() {
   try {
     const data = await apiGet('/categories');
     const grid = document.getElementById('categories-grid');
+    if (!grid) return data;
 
     data.items.forEach((cat, index) => {
       const icono = CATEGORY_ICONS[index % CATEGORY_ICONS.length];
+      const imgUrl = CATEGORY_IMAGES[cat.nombre] || `https://picsum.photos/seed/${encodeURIComponent(cat.nombre)}/400/400`;
+
       const col = document.createElement('div');
       col.className = 'col-4 col-md-2';
-      const card = document.createElement('div');
-      card.className = 'category-card';
-      card.dataset.id = cat.id_categoria;
+      const link = document.createElement('a');
+      link.className = 'category-card-wrap';
+      link.href = `/pages/directory/directory.html?categoria=${cat.id_categoria}`;
       const count = cat.total_negocios || cat.business_count || 0;
-      card.innerHTML = `
-        <i class="bi ${icono}"></i>
+      link.innerHTML = `
+        <div class="category-card-img">
+          <img src="${imgUrl}" alt="${cat.nombre}" loading="lazy">
+          <div class="overlay"></div>
+        </div>
         <span>${cat.nombre}</span>
-        ${count > 0 ? `<small class="text-muted mt-1">${count} negocios</small>` : ''}
+        ${count > 0 ? `<small class="text-muted d-block text-center">${count} negocios</small>` : ''}
       `;
-      card.addEventListener('click', () => irADirectorio('categoria', cat.id_categoria));
-      col.appendChild(card);
+      col.appendChild(link);
       grid.appendChild(col);
     });
+
+    return data;
   } catch (e) {
     console.error('Error cargando categorías:', e);
+    return { items: [], total: 0 };
   }
 }
 
 async function cargarNegocios() {
   try {
-    const data = await apiGet('/businesses?size=6&orden=reciente');
+    const data = await apiGet('/businesses?size=50&orden=reciente');
+
+    const skeleton = document.getElementById('skeleton-grid');
     const grid = document.getElementById('negocios-grid');
+    if (!grid) return data;
+
+    if (skeleton) skeleton.classList.add('d-none');
+    grid.classList.remove('d-none');
 
     if (!data.items || data.items.length === 0) {
-      grid.innerHTML = '<div class="col-12"><p class="text-muted text-center">No hay negocios destacados aún</p></div>';
-      return;
+      grid.innerHTML = '<div class="col-12"><p class="text-muted text-center">No hay negocios disponibles aún</p></div>';
+      return data;
     }
 
-    data.items.forEach(negocio => {
+    data.items.forEach((negocio, index) => {
       const col = document.createElement('div');
-      col.className = 'col-12 col-md-6 col-lg-4';
-      col.innerHTML = `
-        <div class="card business-card shadow-sm">
-          <img src="${imgSrc(negocio.imagen_portada_url, negocio.nombre)}"
-               class="card-img-top" alt="${negocio.nombre}">
-          <div class="card-body d-flex flex-column">
-            <span class="badge bg-primary mb-2 align-self-start">${negocio.categoria}</span>
+      col.className = 'col-md-4';
+      const card = document.createElement('div');
+      card.className = 'card business-card';
+      card.style.transitionDelay = `${index * 0.05}s`;
+
+      const rating = negocio.puntuacion_promedio || 0;
+      const ratingDisplay = Number(rating).toFixed(1);
+
+      card.innerHTML = `
+        <div class="card-img-wrap">
+          <img src="${imgSrc(negocio.imagen_portada_url, negocio.nombre)}" alt="${negocio.nombre}" loading="lazy">
+          <div class="rating-badge">
+            <i class="bi bi-star-fill"></i>
+            <span>${ratingDisplay}</span>
+          </div>
+        </div>
+        <div class="card-body d-flex flex-column">
+          <div class="d-flex justify-content-between align-items-start mb-2">
             <h5 class="card-title">${negocio.nombre}</h5>
-            <p class="card-text text-muted flex-grow-1">${truncate(negocio.descripcion, 80)}</p>
-            <div class="d-flex align-items-center gap-2 mb-2">
-              <div class="stars">${renderStars(negocio.puntuacion_promedio)}</div>
-              <span class="fw-semibold" style="font-size:0.9rem">${negocio.puntuacion_promedio}</span>
-              <span class="text-muted small">(${negocio.total_valoraciones})</span>
-            </div>
-            <small class="text-muted">
-              <i class="bi bi-geo-alt"></i> ${negocio.distrito || 'Huancayo'}
-            </small>
+            <span class="verified-tag">
+              <i class="bi bi-patch-check-fill me-1" style="font-size:0.55rem"></i>Verificado
+            </span>
+          </div>
+          <p class="card-text mb-3">${truncate(negocio.descripcion, 90)}</p>
+          <div class="info-row mb-3">
+            <span><i class="bi bi-geo-alt"></i> ${negocio.distrito || 'Huancayo'}</span>
+            <span><i class="bi bi-clock"></i> ${negocio.esta_abierto ? 'Abierto' : 'Cerrado'}</span>
+          </div>
+          <div class="mt-auto">
             <a href="/pages/business-profile/business-profile.html?id=${negocio.id_emprendimiento}"
-               class="btn btn-outline-primary btn-sm w-100 mt-2">Ver Perfil</a>
+               class="btn btn-outline-primary w-100">Ver Perfil</a>
           </div>
         </div>
       `;
+      col.appendChild(card);
       grid.appendChild(col);
     });
+
+    setTimeout(() => {
+      grid.querySelectorAll('.business-card').forEach(el => el.classList.add('revealed'));
+    }, 200);
+
+    initBizScroll(grid);
+
+    return data;
   } catch (e) {
     console.error('Error cargando negocios:', e);
+    const skeleton = document.getElementById('skeleton-grid');
+    if (skeleton) skeleton.classList.add('d-none');
+    const grid = document.getElementById('negocios-grid');
+    if (grid) {
+      grid.classList.remove('d-none');
+      grid.innerHTML = '<div class="col-12"><p class="text-muted text-center">Error al cargar negocios</p></div>';
+    }
+    return { items: [], total: 0 };
   }
+}
+
+function animarContadores(catData, bizData) {
+  const catCount = catData?.items?.length || 0;
+  const bizTotal = bizData?.total || 0;
+
+  let ratingCount = 0;
+  if (bizData?.items) {
+    bizData.items.forEach(b => { ratingCount += b.total_valoraciones || 0; });
+  }
+  const prodCount = Math.round(bizTotal * 6);
+
+  animarNumero('counter-businesses', bizTotal, 1500);
+  animarNumero('counter-products', prodCount, 1500);
+  animarNumero('counter-categories', catCount, 1000);
+  animarNumero('counter-ratings', ratingCount, 2000);
+}
+
+function animarNumero(id, target, duration) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const start = performance.now();
+  function step(now) {
+    const progress = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    el.textContent = Math.floor(eased * target);
+    if (progress < 1) requestAnimationFrame(step);
+    else el.textContent = target;
+  }
+  requestAnimationFrame(step);
+}
+
+function initScrollTop() {
+  const btn = document.getElementById('scroll-top-btn');
+  if (!btn) return;
+  window.addEventListener('scroll', () => {
+    btn.classList.toggle('visible', window.scrollY > 500);
+  });
+  btn.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+}
+
+function initBizScroll(grid) {
+  const leftBtn = document.getElementById('biz-scroll-left');
+  const rightBtn = document.getElementById('biz-scroll-right');
+  if (!leftBtn || !rightBtn) return;
+
+  const scrollAmount = 400;
+
+  const scrollBy = (dir) => {
+    const firstCard = grid.querySelector('.col-md-4');
+    if (!firstCard) return;
+    grid.scrollBy({ left: dir * scrollAmount, behavior: 'smooth' });
+  };
+
+  leftBtn.addEventListener('click', () => scrollBy(-1));
+  rightBtn.addEventListener('click', () => scrollBy(1));
 }
 
 function buscarDesdeHero() {
@@ -96,11 +208,5 @@ function buscarDesdeHero() {
   const params = new URLSearchParams();
   if (busqueda) params.set('busqueda', busqueda);
   if (distrito) params.set('distrito', distrito);
-  window.location.href = `/pages/directory/directory.html?${params.toString()}`;
-}
-
-function irADirectorio(tipo, valor) {
-  const params = new URLSearchParams();
-  if (tipo === 'categoria') params.set('categoria', valor);
   window.location.href = `/pages/directory/directory.html?${params.toString()}`;
 }
