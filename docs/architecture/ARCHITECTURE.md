@@ -1,24 +1,25 @@
 # BizRise — Arquitectura del Sistema
 
-## Stack Tecnológico DEFINITIVO
+## Stack Tecnológico
 
 ### Frontend
 | Tecnología | Uso |
 |---|---|
-| HTML5 puro | Estructura de cada página |
-| CSS3 puro | Estilos por página (archivo separado) |
-| JavaScript puro (ES6+) | Lógica por página (archivo separado) |
-| Bootstrap 5.3 (CDN) | Framework CSS — OBLIGATORIO |
-| Bootstrap Icons (CDN) | Íconos — OBLIGATORIO |
-| fetch() nativo | Llamadas HTTP al backend |
+| Angular (última versión) | Framework SPA — Standalone Components |
+| Bootstrap 5.3 (NPM) | Framework CSS — OBLIGATORIO |
+| Bootstrap Icons (NPM) | Íconos — OBLIGATORIO |
+| TypeScript estricto | Lenguaje |
+| Angular Signals | Estado reactivo |
+| Reactive Forms | Formularios con validadores custom |
+| HttpClient + interceptores | Llamadas HTTP + JWT |
 
 ### Backend
 | Tecnología | Uso |
 |---|---|
 | Python 3.11+ | Lenguaje principal |
 | FastAPI | Framework REST API |
-| SQLAlchemy 2.0 | ORM |
-| pyodbc | Driver Python → SQL Server |
+| pyodbc | Driver Python → SQL Server (directo, sin ORM) |
+| SQLAlchemy 2.0 | Solo para crear tablas al inicio |
 | python-jose | JWT tokens |
 | passlib[bcrypt] | Hash contraseñas |
 | python-multipart | Upload de imágenes |
@@ -28,7 +29,38 @@
 | Tecnología | Uso |
 |---|---|
 | SQL Server 2019+ | Motor principal — OBLIGATORIO |
+| Docker | Contenedor SQL Server |
 | pyodbc | Conexión Python-SQL Server |
+
+---
+
+## Arquitectura 3 Capas
+
+```
+┌──────────────────────────────────────────────────┐
+│   CAPA 1: PRESENTACIÓN (Frontend)                │
+│   Angular + Bootstrap 5.3 NPM + Signals          │
+│   Puerto: 4200 (ng serve)                        │
+│   Standalone Components + Lazy Loading           │
+└───────────────────────┬──────────────────────────┘
+                        │ HTTP REST / JSON
+                        │ Authorization: Bearer <JWT>
+┌───────────────────────▼──────────────────────────┐
+│   CAPA 2: LÓGICA DE NEGOCIO (Backend)            │
+│   Python + FastAPI                               │
+│   Puerto: 8000 — /api/v1/...                     │
+│   Controllers: router + schemas Pydantic + lógica│
+│   Repositories: execute_sp() → pyodbc directo    │
+└───────────────────────┬──────────────────────────┘
+                        │ EXEC sp_name @param=?
+                        │ pyodbc driver
+┌───────────────────────▼──────────────────────────┐
+│   CAPA 3: DATOS (Base de datos)                  │
+│   SQL Server 2019+ en Docker                     │
+│   Puerto: 1433 — Base: BizRiseDB                 │
+│   TODAS las operaciones via Stored Procedures    │
+└──────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -37,124 +69,70 @@
 ```
 bizrise/
 │
-├── frontend/
-│   ├── pages/
-│   │   ├── home/
-│   │   │   ├── home.html
-│   │   │   ├── home.css
-│   │   │   └── home.js
-│   │   ├── directory/
-│   │   │   ├── directory.html
-│   │   │   ├── directory.css
-│   │   │   └── directory.js
-│   │   ├── categories/
-│   │   │   ├── categories.html
-│   │   │   ├── categories.css
-│   │   │   └── categories.js
-│   │   ├── business-profile/
-│   │   │   ├── business-profile.html
-│   │   │   ├── business-profile.css
-│   │   │   └── business-profile.js
-│   │   ├── auth/
-│   │   │   ├── login.html
-│   │   │   ├── login.css
-│   │   │   ├── login.js
-│   │   │   ├── register.html
-│   │   │   ├── register.css
-│   │   │   └── register.js
-│   │   ├── entrepreneur/
-│   │   │   ├── dashboard.html
-│   │   │   ├── dashboard.css
-│   │   │   ├── dashboard.js
-│   │   │   ├── my-business.html
-│   │   │   ├── my-business.css
-│   │   │   ├── my-business.js
-│   │   │   ├── products.html
-│   │   │   ├── products.css
-│   │   │   ├── products.js
-│   │   │   ├── promotions.html
-│   │   │   ├── promotions.css
-│   │   │   ├── promotions.js
-│   │   │   ├── settings.html
-│   │   │   ├── settings.css
-│   │   │   └── settings.js
-│   │   └── admin/
-│   │       ├── dashboard.html
-│   │       ├── dashboard.css
-│   │       ├── dashboard.js
-│   │       ├── requests.html
-│   │       ├── requests.css
-│   │       ├── requests.js
-│   │       ├── users.html
-│   │       ├── users.css
-│   │       └── users.js
-│   │
-│   ├── components/                    ← HTML reutilizable (incluido via JS)
-│   │   ├── navbar/
-│   │   │   ├── navbar.html
-│   │   │   ├── navbar.css
-│   │   │   └── navbar.js
-│   │   ├── footer/
-│   │   │   ├── footer.html
-│   │   │   ├── footer.css
-│   │   │   └── footer.js
-│   │   └── business-card/
-│   │       ├── business-card.html
-│   │       ├── business-card.css
-│   │       └── business-card.js
-│   │
-│   └── assets/
-│       ├── css/
-│       │   └── global.css             ← variables CSS, estilos compartidos
-│       ├── js/
-│       │   ├── api.js                 ← funciones fetch base
-│       │   └── auth.js                ← manejo de JWT localStorage
-│       └── images/
-│           └── placeholder.jpg
+├── frontend/                        ← bizrise-frontend/
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── core/
+│   │   │   │   ├── guards/          ← auth.guard.ts (adminGuard, entrepreneurGuard)
+│   │   │   │   ├── interceptors/    ← JWT interceptor funcional
+│   │   │   │   ├── services/        ← servicios con Signals
+│   │   │   │   └── models/          ← interfaces TypeScript
+│   │   │   ├── shared/
+│   │   │   │   └── components/      ← componentes reutilizables
+│   │   │   ├── public/              ← landing, directorio, perfil, categorías
+│   │   │   ├── auth/                ← login, registro
+│   │   │   ├── entrepreneur/        ← dashboard, mi negocio, productos, promos, settings
+│   │   │   ├── admin/               ← dashboard, solicitudes, usuarios
+│   │   │   ├── app.routes.ts        ← rutas con lazy loading + guards
+│   │   │   └── app.config.ts        ← providers (HttpClient, interceptor)
+│   │   ├── styles/
+│   │   │   ├── _variables.scss      ← $primary: #6f42c1
+│   │   │   └── styles.scss          ← global CSS + override Bootstrap
+│   │   └── environments/
+│   ├── angular.json
+│   └── package.json
 │
 ├── backend/
 │   ├── src/
 │   │   ├── config/
-│   │   │   ├── db.py                  ← conexión SQLAlchemy + pyodbc
-│   │   │   └── settings.py            ← variables de entorno
-│   │   ├── models/
-│   │   │   ├── user.py
-│   │   │   ├── business.py
-│   │   │   ├── category.py
-│   │   │   ├── product.py
-│   │   │   ├── review.py
-│   │   │   ├── rating.py
-│   │   │   ├── promotion.py
-│   │   │   └── social_network.py
-│   │   ├── controllers/
-│   │   │   ├── auth_controller.py     ← router + lógica autenticación
-│   │   │   ├── business_controller.py ← router + lógica directorio público
-│   │   │   ├── category_controller.py ← router + lógica categorías
-│   │   │   ├── entrepreneur_controller.py ← router + lógica panel emprendedor
-│   │   │   └── admin_controller.py    ← router + lógica panel administrador
+│   │   │   ├── settings.py          ← variables de entorno
+│   │   │   └── db.py                ← conexión pyodbc DIRECTA (NO SQLAlchemy Session)
+│   │   ├── models/                  ← SQLAlchemy solo para crear tablas
+│   │   ├── controllers/             ← router + schemas Pydantic + lógica
+│   │   │   ├── auth_controller.py
+│   │   │   ├── category_controller.py
+│   │   │   ├── business_controller.py
+│   │   │   ├── entrepreneur_controller.py
+│   │   │   ├── admin_controller.py
+│   │   │   └── users_controller.py
+│   │   ├── repositories/            ← BaseRepository + por entidad
+│   │   │   ├── base_repository.py   ← execute_sp(), execute_sp_multi(), execute_sp_single()
+│   │   │   ├── user_repository.py
+│   │   │   ├── business_repository.py
+│   │   │   ├── product_repository.py
+│   │   │   ├── review_repository.py
+│   │   │   ├── promotion_repository.py
+│   │   │   └── category_repository.py
 │   │   └── database/
-│   │       ├── schema.sql             ← CREATE TABLE de todas las tablas
-│   │       └── seeds.sql              ← INSERT de datos iniciales
+│   │       ├── schema.sql           ← CREATE TABLE de todas las tablas
+│   │       ├── seeds.sql            ← INSERT de datos iniciales
+│   │       └── stored_procedures.sql ← CREATE OR ALTER de todos los SPs
 │   ├── data/
 │   │   ├── raw/
 │   │   └── backups/
 │   ├── tests/
-│   │   ├── test_auth.py
-│   │   ├── test_businesses.py
-│   │   └── test_admin.py
-│   ├── uploads/                       ← imágenes subidas
+│   ├── uploads/
 │   │   ├── negocios/
 │   │   └── productos/
-│   ├── main.py                        ← punto de entrada FastAPI
+│   ├── main.py                      ← punto de entrada FastAPI
 │   ├── .env
-│   ├── .env.example
-│   ├── requirements.txt
-│   └── README.md
+│   └── requirements.txt
 │
-└── docs/                              ← documentación del proyecto
+└── docs/
     ├── CLAUDE.md
-    ├── specs/
     ├── architecture/
+    │   └── ARCHITECTURE.md
+    ├── specs/
     ├── decisions/
     ├── api/
     └── components/
@@ -162,83 +140,70 @@ bizrise/
 
 ---
 
-## Arquitectura 3-Tier
+## Flujo de datos (end-to-end)
 
 ```
-┌──────────────────────────────────────────────┐
-│   CAPA 1: PRESENTACIÓN (Frontend)            │
-│   HTML5 + CSS3 + JS puro + Bootstrap 5 CDN  │
-│   Archivos .html / .css / .js separados      │
-│   fetch() para llamadas al backend           │
-└─────────────────┬────────────────────────────┘
-                  │ HTTP REST / JSON
-                  │ Authorization: Bearer <JWT>
-┌─────────────────▼────────────────────────────┐
-│   CAPA 2: LÓGICA DE NEGOCIO (Backend)        │
-│   Python 3.11 + FastAPI                      │
-│   Puerto: 8000 — /api/v1/...                 │
-│   controllers/ contiene router + lógica      │
-└─────────────────┬────────────────────────────┘
-                  │ SQLAlchemy ORM
-                  │ pyodbc driver
-┌─────────────────▼────────────────────────────┐
-│   CAPA 3: DATOS (Base de datos)              │
-│   SQL Server 2019+                           │
-│   Puerto: 1433 — Base: BizRiseDB             │
-└──────────────────────────────────────────────┘
-```
-
----
-
-## Cómo se cargan los componentes HTML en JS puro
-
-Cada página incluye el navbar y footer dinámicamente via JS:
-
-```javascript
-// En cada página .js, al inicio:
-async function loadComponent(id, path) {
-  const res = await fetch(path);
-  const html = await res.text();
-  document.getElementById(id).innerHTML = html;
-}
-
-document.addEventListener('DOMContentLoaded', async () => {
-  await loadComponent('navbar-container', '../../components/navbar/navbar.html');
-  await loadComponent('footer-container', '../../components/footer/footer.html');
-});
-```
-
-```html
-<!-- En cada página .html -->
-<div id="navbar-container"></div>
-<!-- contenido de la página -->
-<div id="footer-container"></div>
+Angular Component
+    │
+    ▼
+Service (Signal) ← estado reactivo
+    │
+    ▼
+HttpClient (con JWT interceptor)
+    │  POST/GET/PUT/DELETE → /api/v1/...
+    ▼
+FastAPI Controller
+    │  valida con Pydantic schema
+    ▼
+Repository.execute_sp("sp_name", {params})
+    │  construye: EXEC sp_name @param1=?, @param2=?
+    ▼
+pyodbc cursor.execute(query, values)
+    │
+    ▼
+SQL Server Stored Procedure
+    │
+    ▼
+ResultSet → list[dict]
+    │
+    ▼
+Repository retorna dicts
+    │
+    ▼
+Controller serializa con Pydantic response_model
+    │
+    ▼
+HTTP Response JSON
+    │
+    ▼
+Service actualiza Signal
+    │
+    ▼
+UI se actualiza automáticamente (reactividad)
 ```
 
 ---
 
-## Protección de páginas privadas (JS puro)
+## Reglas clave de la arquitectura
 
-```javascript
-// Al inicio de CADA página privada (entrepreneur/*, admin/*):
-function checkAuth(requiredRole) {
-  const token = localStorage.getItem('bizrise_access_token');
-  const user = JSON.parse(localStorage.getItem('bizrise_user') || 'null');
-  
-  if (!token || !user) {
-    window.location.href = '../../pages/auth/login.html';
-    return false;
-  }
-  if (requiredRole && user.rol !== requiredRole) {
-    window.location.href = '../../pages/home/home.html';
-    return false;
-  }
-  return true;
-}
+1. **Base de datos**: TODAS las operaciones CRUD pasan por Stored Procedures. NUNCA SQL inline en Python ni SQLAlchemy ORM en controllers.
 
-// Uso en dashboard del emprendedor:
-checkAuth('emprendedor');
+2. **Repositorios**: Cada entidad tiene su repositorio que hereda de `BaseRepository`. Los repositorios usan `execute_sp("sp_name", {params})` que construye `EXEC sp_name @param1=?, @param2=?` y retorna listas de diccionarios.
 
-// Uso en panel admin:
-checkAuth('administrador');
-```
+3. **Controladores**: Cada controller contiene `APIRouter` + schemas Pydantic (request/response) + lógica de negocio. No hay carpetas `services/` ni `routers/` separadas.
+
+4. **Frontend**: Componentes standalone con lazy loading. Reactive Forms con validadores custom. Signals para estado reactivo. Interceptor funcional para JWT.
+
+5. **Formularios y botones**: Toda acción muestra spinner, llama endpoint, ejecuta SP, actualiza Signal, actualiza UI, muestra Toast.
+
+6. **Validaciones críticas**: Fechas de promociones validadas en frontend (custom validator) y backend (Pydantic field_validator). Búsqueda con debounce 400ms y query params en URL.
+
+---
+
+## Puertos
+
+| Servicio | Puerto |
+|---|---|
+| Frontend (ng serve) | `http://localhost:4200` |
+| Backend (uvicorn) | `http://localhost:8000` |
+| SQL Server (Docker) | `localhost:1433` |

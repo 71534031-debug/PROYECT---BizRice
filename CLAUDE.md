@@ -8,153 +8,106 @@ Autor: Anccasi Espinoza, Jorge Lennon.
 
 ---
 
-## REGLA 1 — FRONTEND: HTML + CSS + JS puros y separados
+## FRONTEND: Angular Standalone + Bootstrap NPM
 
-El frontend NO usa Angular, NO usa React, NO usa TypeScript, NO usa Vue.
-El frontend ES:
-- HTML5 puro (.html)
-- CSS3 puro (.css) — UN archivo CSS por página o componente
-- JavaScript puro (.js) — UN archivo JS por página o componente
-- Bootstrap 5.3 via CDN para todos los estilos y componentes
-- Bootstrap Icons via CDN para todos los íconos
-- fetch() nativo para llamadas al backend (no axios, no jQuery)
-
-### Estructura de cada página:
-```
-pagina/
-├── pagina.html   ← solo estructura HTML5, sin estilos inline
-├── pagina.css    ← solo estilos CSS de esa página
-└── pagina.js     ← solo lógica JS de esa página
-```
-
-### Bootstrap CDN que va en TODOS los HTML:
-```html
-<!-- En el <head> -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-
-<!-- Antes del </body> -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-```
-
-### CSS global compartido:
-```
-frontend/assets/css/global.css  ← variables CSS, estilos compartidos de todas las páginas
-```
-
-### JS global compartido:
-```
-frontend/assets/js/api.js       ← URL base del backend y función fetch() base
-frontend/assets/js/auth.js      ← manejo de tokens JWT en localStorage
-```
-
-### REGLAS de CSS:
-- NUNCA escribir estilos en el atributo style="" del HTML
-- SIEMPRE usar clases Bootstrap primero
-- Solo escribir CSS custom cuando Bootstrap no lo resuelve
-- El color primario BizRise es #6f42c1 (morado), definido en global.css como variable
-
-### REGLAS de JS:
-- NUNCA escribir JS dentro de etiquetas <script> en el HTML
-- SIEMPRE en archivo .js separado
-- Usar fetch() para llamadas a la API
-- Usar async/await (no .then().catch() anidados)
-- Guardar tokens en localStorage con claves: 'bizrise_access_token', 'bizrise_refresh_token', 'bizrise_user'
+- Angular versión más reciente con Standalone Components
+- Bootstrap 5.3 instalado via NPM (no CDN)
+- Bootstrap Icons via NPM
+- TypeScript estricto
+- Angular Signals para estado reactivo
+- HttpClient con interceptores JWT
+- Reactive Forms con validadores custom
+- Lazy loading en todas las rutas
+- Color primario #6f42c1 en _variables.scss sobreescribiendo $primary de Bootstrap
 
 ---
 
-## REGLA 2 — BACKEND: Python + FastAPI con estructura de carpetas específica
+## BACKEND: Python + FastAPI + Stored Procedures
 
 ```
 backend/
 ├── src/
 │   ├── config/         ← configuración y conexión a BD (db.py, settings.py)
-│   ├── models/         ← modelos SQLAlchemy (tablas SQL Server)
-│   ├── controllers/    ← lógica de negocio + routers FastAPI
-│   └── database/       ← scripts SQL de creación de tablas y seeds
+│   ├── models/         ← modelos SQLAlchemy (solo para crear tablas al inicio)
+│   ├── controllers/    ← router FastAPI + schemas Pydantic + lógica de negocio
+│   ├── repositories/   ← heredan BaseRepository, usan execute_sp() con pyodbc directo
+│   └── database/       ← stored_procedures.sql con CREATE OR ALTER, schema.sql, seeds.sql
 ├── data/
 │   ├── raw/
 │   └── backups/
 ├── tests/
-├── main.py             ← punto de entrada FastAPI
+├── main.py
 ├── .env
 ├── requirements.txt
 └── README.md
 ```
 
-### NUNCA usar:
-- services/ (la lógica va en controllers/)
-- repositories/ (las queries van en controllers/)
-- routers/ separado (los routers van dentro de controllers/)
-
-### Cada controller es un archivo que contiene:
-1. El router FastAPI (APIRouter)
-2. Las funciones de lógica de negocio
-3. Las queries SQLAlchemy a SQL Server
+### Reglas de backend:
+- NUNCA queries SQLAlchemy ORM directas — todo pasa por Stored Procedures
+- Los modelos SQLAlchemy solo se usan para crear las tablas al inicio
+- NUNCA SQL inline en Python — siempre EXEC sp_name via execute_sp()
+- NUNCA usar carpetas services/, routers/ separados
+- Cada controller contiene: APIRouter + schemas Pydantic + lógica de negocio
+- Cada repository hereda BaseRepository y llama execute_sp("sp_name", {params})
 
 ---
 
-## REGLA 3 — Base de datos: SQL Server + pyodbc
+## BASE DE DATOS: SQL Server 2019+ en Docker
 
-- Motor: SQL Server 2019+
+- Motor: SQL Server 2019+ (corriendo en Docker)
 - Driver Python: pyodbc — OBLIGATORIO
-- ORM: SQLAlchemy con dialecto mssql+pyodbc
+- TODAS las operaciones usan Stored Procedures
 - Connection string: `mssql+pyodbc://user:pass@server/BizRiseDB?driver=ODBC+Driver+17+for+SQL+Server`
 - NUNCA usar SQLite, NUNCA usar PostgreSQL
 
 ---
 
-## REGLA 4 — Autenticación JWT
+## FLUJO DE DATOS obligatorio
+
+```
+Angular Component → Service (Signal) → HttpClient → FastAPI Controller → Repository.execute_sp() → SQL Server SP → Response → Signal actualiza UI
+```
+
+---
+
+## REGLA de botones y formularios
+
+Toda acción debe:
+1. Mostrar Spinner mientras carga
+2. Llamar al endpoint
+3. Ejecutar el SP
+4. Actualizar el Signal
+5. Actualizar la UI sin recargar
+6. Mostrar Toast de éxito o error
+
+---
+
+## VALIDACIONES ya corregidas (mantener)
+
+### Promociones (fechas):
+- `fecha_inicio` no puede ser anterior a hoy
+- `fecha_fin` debe ser posterior a `fecha_inicio`
+- Validar en Angular (validador custom Reactive Forms) Y en Python (field_validator Pydantic)
+
+### Buscador del directorio:
+- Debounce de 400ms
+- Actualiza query params de la URL sin recargar
+- Busca en nombre Y descripción con LIKE en el SP
+
+---
+
+## Autenticación JWT
 
 - Librería: python-jose[cryptography]
 - Hash contraseñas: passlib[bcrypt]
 - Access token: 30 minutos
 - Refresh token: 7 días
-- En JS: guardar en localStorage, enviar en header Authorization: Bearer <token>
-
----
-
-## REGLA 5 — Color y diseño
-
-- Color primario: #6f42c1 (morado BizRise)
-- Definir como variable CSS: --bizrise-primary: #6f42c1;
-- Usar btn-primary, text-primary, bg-primary de Bootstrap (sobreescribir con CSS)
-- Bootstrap Icons para TODOS los íconos (bi bi-*)
+- Frontend: guardar en localStorage, enviar en header Authorization: Bearer <token> via interceptor
 
 ---
 
 ## Puertos
-- Frontend: abrir directamente los .html en el navegador O usar Live Server en VSCode
+
+- Frontend: http://localhost:4200 (ng serve)
 - Backend: http://localhost:8000
 - SQL Server: localhost:1433
-
----
-
-## Llamadas API desde JS (patrón estándar)
-```javascript
-// En cada archivo .js, importar desde api.js
-const API_URL = 'http://localhost:8000/api/v1';
-
-async function apiGet(endpoint) {
-  const token = localStorage.getItem('bizrise_access_token');
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    headers: { 'Authorization': `Bearer ${token}` }
-  });
-  if (!response.ok) throw new Error(await response.text());
-  return response.json();
-}
-
-async function apiPost(endpoint, data) {
-  const token = localStorage.getItem('bizrise_access_token');
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify(data)
-  });
-  if (!response.ok) throw new Error(await response.text());
-  return response.json();
-}
-```

@@ -1,7 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, Header, UploadFile, File, Form, Query
-from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import func
-from pydantic import BaseModel, field_validator
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
+from pydantic import BaseModel, field_validator, model_validator
 from datetime import datetime, time, date, timezone
 from typing import Optional
 from passlib.context import CryptContext
@@ -9,28 +7,27 @@ import re
 import os
 import uuid
 
-from src.config.db import get_db
+from src.config.db import get_db_conn
 from src.config.settings import settings
-from src.models.business import Emprendimiento
-from src.models.category import Categoria
-from src.models.product import Producto
-from src.models.promotion import Promocion
-from src.models.review import Comentario
-from src.models.rating import Valoracion
-from src.models.user import Usuario
+from src.repositories.business_repository import BusinessRepository
+from src.repositories.product_repository import ProductRepository
+from src.repositories.promotion_repository import PromotionRepository
+from src.repositories.review_repository import ReviewRepository
+from src.repositories.base_repository import BaseRepository
 from src.controllers.auth_controller import require_role, pwd_context
 
 router = APIRouter()
 
-# ─── Schemas ───────────────────────────────────────────────────────────────
 
 class CategoryInfo(BaseModel):
     id_categoria: int
     nombre: str
 
+
 class RedSocialInfo(BaseModel):
     plataforma: str
     url: str
+
 
 class BusinessResponse(BaseModel):
     id_emprendimiento: int
@@ -49,6 +46,7 @@ class BusinessResponse(BaseModel):
     total_valoraciones: int = 0
     redes_sociales: list[RedSocialInfo] = []
 
+
 class BusinessCreate(BaseModel):
     nombre: str
     id_categoria: int
@@ -56,6 +54,7 @@ class BusinessCreate(BaseModel):
     telefono: Optional[str] = None
     direccion: Optional[str] = None
     distrito: Optional[str] = None
+
 
 class BusinessUpdate(BaseModel):
     nombre: Optional[str] = None
@@ -65,14 +64,17 @@ class BusinessUpdate(BaseModel):
     direccion: Optional[str] = None
     distrito: Optional[str] = None
 
+
 class ScheduleItem(BaseModel):
     dia: str
     abierto: bool
     apertura: Optional[str] = None
     cierre: Optional[str] = None
 
+
 class ScheduleUpdate(BaseModel):
     horarios: list[ScheduleItem]
+
 
 class ProductResponse(BaseModel):
     id_producto: int
@@ -85,12 +87,14 @@ class ProductResponse(BaseModel):
     activo: bool
     fecha_creacion: Optional[datetime] = None
 
+
 class ProductListResponse(BaseModel):
     items: list[ProductResponse]
     total: int
     page: int
     size: int
     pages: int
+
 
 class PromotionResponse(BaseModel):
     id_promocion: int
@@ -100,12 +104,28 @@ class PromotionResponse(BaseModel):
     fecha_fin: Optional[date] = None
     estado: str
 
+
 class PromotionCreate(BaseModel):
     titulo: str
     descripcion: Optional[str] = None
     fecha_inicio: Optional[date] = None
     fecha_fin: Optional[date] = None
     estado: str = "activa"
+
+    @field_validator('fecha_inicio')
+    @classmethod
+    def fecha_inicio_no_pasada(cls, v):
+        if v is not None and v < date.today():
+            raise ValueError('La fecha de inicio no puede ser anterior a hoy')
+        return v
+
+    @model_validator(mode='after')
+    def fechas_coherentes(self):
+        if self.fecha_inicio and self.fecha_fin:
+            if self.fecha_fin <= self.fecha_inicio:
+                raise ValueError('La fecha fin debe ser posterior a la fecha inicio')
+        return self
+
 
 class PromotionUpdate(BaseModel):
     titulo: Optional[str] = None
@@ -114,10 +134,26 @@ class PromotionUpdate(BaseModel):
     fecha_fin: Optional[date] = None
     estado: Optional[str] = None
 
+    @field_validator('fecha_inicio')
+    @classmethod
+    def fecha_inicio_no_pasada(cls, v):
+        if v is not None and v < date.today():
+            raise ValueError('La fecha de inicio no puede ser anterior a hoy')
+        return v
+
+    @model_validator(mode='after')
+    def fechas_coherentes(self):
+        if self.fecha_inicio and self.fecha_fin:
+            if self.fecha_fin <= self.fecha_inicio:
+                raise ValueError('La fecha fin debe ser posterior a la fecha inicio')
+        return self
+
+
 class ActividadReciente(BaseModel):
     tipo: str
     mensaje: str
     fecha: datetime
+
 
 class StatsResponse(BaseModel):
     visitas_totales: int = 0
@@ -127,6 +163,7 @@ class StatsResponse(BaseModel):
     productos_activos: int = 0
     estado_negocio: Optional[str] = None
     actividad_reciente: list[ActividadReciente] = []
+
 
 class PasswordChange(BaseModel):
     contrasena_actual: str
@@ -141,14 +178,15 @@ class PasswordChange(BaseModel):
             raise ValueError('Debe contener al menos un número')
         return v
 
+
 class NotificationPreferences(BaseModel):
     email_notificaciones: bool
     whatsapp_notificaciones: bool
 
+
 class MessageResponse(BaseModel):
     message: str
 
-# ─── Helpers ───────────────────────────────────────────────────────────────
 
 async def _guardar_imagen(upload: UploadFile, subdir: str) -> str:
     if upload.content_type not in ("image/jpeg", "image/png", "image/webp"):
@@ -173,130 +211,115 @@ async def _guardar_imagen(upload: UploadFile, subdir: str) -> str:
 
     return f"/uploads/{subdir}/{filename}"
 
-def _get_empresa_usuario(db: Session, user: Usuario):
-    emp = db.query(Emprendimiento).options(
-        joinedload(Emprendimiento.categoria),
-        joinedload(Emprendimiento.redes_sociales)
-    ).filter(Emprendimiento.id_usuario == user.id_usuario).first()
-    return emp
-
-# ─── Endpoints — Negocio ──────────────────────────────────────────────────
 
 @router.get("/business", response_model=BusinessResponse)
 def obtener_mi_negocio(
-    current_user: Usuario = Depends(require_role("emprendedor")),
-    db: Session = Depends(get_db)
+    current_user=Depends(require_role("emprendedor")),
+    conn=Depends(get_db_conn),
 ):
-    emp = _get_empresa_usuario(db, current_user)
+    repo = BusinessRepository(conn)
+    emp = repo.get_by_user(current_user["id_usuario"])
     if not emp:
         raise HTTPException(404, "No tienes un negocio registrado aún")
 
-    promedio = db.query(func.coalesce(func.avg(Valoracion.puntuacion), 0)).filter(
-        Valoracion.id_emprendimiento == emp.id_emprendimiento
-    ).scalar()
-    total_val = db.query(func.count(Valoracion.id_valoracion)).filter(
-        Valoracion.id_emprendimiento == emp.id_emprendimiento
-    ).scalar()
-
     return BusinessResponse(
-        id_emprendimiento=emp.id_emprendimiento,
-        nombre=emp.nombre,
-        descripcion=emp.descripcion,
-        telefono=emp.telefono,
-        direccion=emp.direccion,
-        distrito=emp.distrito,
-        horario_apertura=emp.horario_apertura.strftime("%H:%M:%S") if emp.horario_apertura else None,
-        horario_cierre=emp.horario_cierre.strftime("%H:%M:%S") if emp.horario_cierre else None,
-        imagen_portada_url=emp.imagen_portada_url,
-        estado_verificacion=emp.estado_verificacion,
-        fecha_registro=emp.fecha_registro,
-        categoria=CategoryInfo(id_categoria=emp.categoria.id_categoria, nombre=emp.categoria.nombre) if emp.categoria else None,
-        puntuacion_promedio=round(float(promedio or 0), 1),
-        total_valoraciones=total_val or 0,
-        redes_sociales=[RedSocialInfo(plataforma=r.plataforma, url=r.url) for r in emp.redes_sociales]
+        id_emprendimiento=emp["id_emprendimiento"],
+        nombre=emp["nombre"],
+        descripcion=emp.get("descripcion"),
+        telefono=emp.get("telefono"),
+        direccion=emp.get("direccion"),
+        distrito=emp.get("distrito"),
+        horario_apertura=str(emp.get("horario_apertura") or "")[:8] or None,
+        horario_cierre=str(emp.get("horario_cierre") or "")[:8] or None,
+        imagen_portada_url=emp.get("imagen_portada_url"),
+        estado_verificacion=emp["estado_verificacion"],
+        fecha_registro=emp.get("fecha_registro"),
+        categoria=CategoryInfo(
+            id_categoria=emp["id_categoria"],
+            nombre=emp.get("nombre_categoria") or "",
+        ),
+        puntuacion_promedio=float(emp.get("puntuacion_promedio", 0)),
+        total_valoraciones=int(emp.get("total_valoraciones", 0)),
+        redes_sociales=[
+            RedSocialInfo(plataforma=r["plataforma"], url=r["url"])
+            for r in (emp.get("redes_sociales") or [])
+        ],
     )
 
 
 @router.post("/business", status_code=201, response_model=BusinessResponse)
 def registrar_mi_negocio(
     data: BusinessCreate,
-    current_user: Usuario = Depends(require_role("emprendedor")),
-    db: Session = Depends(get_db)
+    current_user=Depends(require_role("emprendedor")),
+    conn=Depends(get_db_conn),
 ):
-    existe = _get_empresa_usuario(db, current_user)
+    repo = BusinessRepository(conn)
+    existe = repo.get_by_user(current_user["id_usuario"])
     if existe:
         raise HTTPException(400, "Ya tienes un negocio registrado")
 
-    cat = db.query(Categoria).filter(Categoria.id_categoria == data.id_categoria).first()
-    if not cat:
-        raise HTTPException(404, "Categoría no encontrada")
+    try:
+        emp = repo.create({
+            "id_usuario": current_user["id_usuario"],
+            "id_categoria": data.id_categoria,
+            "nombre": data.nombre.strip(),
+            "descripcion": data.descripcion.strip() if data.descripcion else None,
+            "telefono": data.telefono,
+            "direccion": data.direccion,
+            "distrito": data.distrito,
+        })
+    except Exception as e:
+        error_msg = str(e)
+        if "Categoría no encontrada" in error_msg:
+            raise HTTPException(404, "Categoría no encontrada")
+        raise HTTPException(400, error_msg)
 
-    emp = Emprendimiento(
-        id_usuario=current_user.id_usuario,
-        id_categoria=data.id_categoria,
-        nombre=data.nombre.strip(),
-        descripcion=data.descripcion.strip() if data.descripcion else None,
-        telefono=data.telefono,
-        direccion=data.direccion,
-        distrito=data.distrito
-    )
-    db.add(emp)
-    db.commit()
-    db.refresh(emp)
+    conn.commit()
 
     return BusinessResponse(
-        id_emprendimiento=emp.id_emprendimiento,
-        nombre=emp.nombre,
-        descripcion=emp.descripcion,
-        telefono=emp.telefono,
-        direccion=emp.direccion,
-        distrito=emp.distrito,
-        estado_verificacion=emp.estado_verificacion,
-        fecha_registro=emp.fecha_registro,
-        categoria=CategoryInfo(id_categoria=cat.id_categoria, nombre=cat.nombre),
+        id_emprendimiento=emp["id_emprendimiento"],
+        nombre=emp["nombre"],
+        descripcion=emp.get("descripcion"),
+        telefono=emp.get("telefono"),
+        direccion=emp.get("direccion"),
+        distrito=emp.get("distrito"),
+        estado_verificacion=emp["estado_verificacion"],
+        fecha_registro=emp.get("fecha_registro"),
+        categoria=CategoryInfo(id_categoria=emp["id_categoria"], nombre=emp.get("nombre_categoria") or ""),
         puntuacion_promedio=0.0,
         total_valoraciones=0,
-        redes_sociales=[]
+        redes_sociales=[],
     )
 
 
 @router.put("/business", response_model=MessageResponse)
 def actualizar_mi_negocio(
     data: BusinessUpdate,
-    current_user: Usuario = Depends(require_role("emprendedor")),
-    db: Session = Depends(get_db)
+    current_user=Depends(require_role("emprendedor")),
+    conn=Depends(get_db_conn),
 ):
-    emp = _get_empresa_usuario(db, current_user)
+    repo = BusinessRepository(conn)
+    emp = repo.get_by_user(current_user["id_usuario"])
     if not emp:
         raise HTTPException(404, "No tienes un negocio registrado aún")
 
-    if data.nombre is not None:
-        emp.nombre = data.nombre.strip()
-    if data.id_categoria is not None:
-        cat = db.query(Categoria).filter(Categoria.id_categoria == data.id_categoria).first()
-        if not cat:
-            raise HTTPException(404, "Categoría no encontrada")
-        emp.id_categoria = data.id_categoria
-    if data.descripcion is not None:
-        emp.descripcion = data.descripcion.strip()
-    if data.telefono is not None:
-        emp.telefono = data.telefono
-    if data.direccion is not None:
-        emp.direccion = data.direccion
-    if data.distrito is not None:
-        emp.distrito = data.distrito
+    try:
+        repo.update(emp["id_emprendimiento"], current_user["id_usuario"], data.model_dump(exclude_none=True))
+    except Exception as e:
+        raise HTTPException(400, str(e))
 
-    db.commit()
+    conn.commit()
     return MessageResponse(message="Negocio actualizado correctamente")
 
 
 @router.put("/business/schedule", response_model=MessageResponse)
 def actualizar_horarios(
     data: ScheduleUpdate,
-    current_user: Usuario = Depends(require_role("emprendedor")),
-    db: Session = Depends(get_db)
+    current_user=Depends(require_role("emprendedor")),
+    conn=Depends(get_db_conn),
 ):
-    emp = _get_empresa_usuario(db, current_user)
+    repo = BusinessRepository(conn)
+    emp = repo.get_by_user(current_user["id_usuario"])
     if not emp:
         raise HTTPException(404, "No tienes un negocio registrado aún")
 
@@ -308,73 +331,66 @@ def actualizar_horarios(
             except ValueError:
                 raise HTTPException(400, f"Formato de hora inválido para {item.dia}")
             if item.dia == "lunes":
-                emp.horario_apertura = h_apertura
-                emp.horario_cierre = h_cierre
+                repo.update(emp["id_emprendimiento"], current_user["id_usuario"], {
+                    "horario_apertura": str(h_apertura),
+                    "horario_cierre": str(h_cierre),
+                })
 
-    db.commit()
+    conn.commit()
     return MessageResponse(message="Horarios actualizados")
 
 
 @router.post("/business/image", response_model=dict)
 async def subir_imagen_portada(
     imagen: UploadFile = File(...),
-    current_user: Usuario = Depends(require_role("emprendedor")),
-    db: Session = Depends(get_db)
+    current_user=Depends(require_role("emprendedor")),
+    conn=Depends(get_db_conn),
 ):
-    emp = _get_empresa_usuario(db, current_user)
+    repo = BusinessRepository(conn)
+    emp = repo.get_by_user(current_user["id_usuario"])
     if not emp:
         raise HTTPException(404, "No tienes un negocio registrado aún")
 
     url = await _guardar_imagen(imagen, "negocios")
-    emp.imagen_portada_url = url
-    db.commit()
+    repo.update(emp["id_emprendimiento"], current_user["id_usuario"], {"imagen_portada_url": url})
+    conn.commit()
 
     return {"imagen_url": url}
 
-
-# ─── Endpoints — Productos ─────────────────────────────────────────────────
 
 @router.get("/products", response_model=ProductListResponse)
 def listar_mis_productos(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     busqueda: Optional[str] = None,
-    current_user: Usuario = Depends(require_role("emprendedor")),
-    db: Session = Depends(get_db)
+    current_user=Depends(require_role("emprendedor")),
+    conn=Depends(get_db_conn),
 ):
-    emp = _get_empresa_usuario(db, current_user)
+    repo = BusinessRepository(conn)
+    emp = repo.get_by_user(current_user["id_usuario"])
     if not emp:
         raise HTTPException(404, "No tienes un negocio registrado aún")
 
-    query = db.query(Producto).filter(Producto.id_emprendimiento == emp.id_emprendimiento)
+    prod_repo = ProductRepository(conn)
+    result = prod_repo.get_by_business(emp["id_emprendimiento"], page=page, size=size, busqueda=busqueda)
 
-    if busqueda:
-        patron = f"%{busqueda}%"
-        query = query.filter(Producto.nombre.ilike(patron))
-
-    total = query.count()
-    items = query.order_by(Producto.fecha_creacion.desc())\
-                 .offset((page - 1) * size).limit(size).all()
-
+    items = [
+        ProductResponse(
+            id_producto=r["id_producto"],
+            nombre=r["nombre"],
+            descripcion=r.get("descripcion"),
+            precio=float(r["precio"]) if r.get("precio") else None,
+            imagen_url=r.get("imagen_url"),
+            estado_stock=r["estado_stock"],
+            stock=r.get("stock") or 0,
+            activo=r.get("activo", True),
+            fecha_creacion=r.get("fecha_creacion"),
+        )
+        for r in result["items"]
+    ]
     return ProductListResponse(
-        items=[
-            ProductResponse(
-                id_producto=p.id_producto,
-                nombre=p.nombre,
-                descripcion=p.descripcion,
-                precio=float(p.precio) if p.precio else None,
-                imagen_url=p.imagen_url,
-                estado_stock=p.estado_stock,
-                stock=p.stock or 0,
-                activo=p.activo,
-                fecha_creacion=p.fecha_creacion
-            )
-            for p in items
-        ],
-        total=total,
-        page=page,
-        size=size,
-        pages=(total + size - 1) // size if total > 0 else 0
+        items=items, total=result["total"],
+        page=result["page"], size=result["size"], pages=result["pages"],
     )
 
 
@@ -386,49 +402,46 @@ async def crear_producto(
     stock: int = Form(0),
     estado_stock: str = Form("disponible"),
     imagen: Optional[UploadFile] = File(None),
-    current_user: Usuario = Depends(require_role("emprendedor")),
-    db: Session = Depends(get_db)
+    current_user=Depends(require_role("emprendedor")),
+    conn=Depends(get_db_conn),
 ):
-    emp = _get_empresa_usuario(db, current_user)
+    biz_repo = BusinessRepository(conn)
+    emp = biz_repo.get_by_user(current_user["id_usuario"])
     if not emp:
         raise HTTPException(404, "No tienes un negocio registrado aún")
-    if emp.estado_verificacion != "aprobado":
+    if emp.get("estado_verificacion") != "aprobado":
         raise HTTPException(400, "No puedes agregar productos si tu negocio no está aprobado")
-
-    count = db.query(func.count(Producto.id_producto)).filter(
-        Producto.id_emprendimiento == emp.id_emprendimiento,
-        Producto.activo == True
-    ).scalar() or 0
-    if count >= 50:
-        raise HTTPException(400, "Máximo 50 productos por emprendimiento")
 
     imagen_url = None
     if imagen and imagen.filename:
         imagen_url = await _guardar_imagen(imagen, "productos")
 
-    prod = Producto(
-        id_emprendimiento=emp.id_emprendimiento,
-        nombre=nombre.strip(),
-        descripcion=descripcion.strip() if descripcion else None,
-        precio=precio,
-        imagen_url=imagen_url,
-        stock=stock,
-        estado_stock=estado_stock
-    )
-    db.add(prod)
-    db.commit()
-    db.refresh(prod)
+    prod_repo = ProductRepository(conn)
+    try:
+        prod = prod_repo.create(emp["id_emprendimiento"], {
+            "nombre": nombre.strip(),
+            "descripcion": descripcion.strip() if descripcion else None,
+            "precio": precio,
+            "imagen_url": imagen_url,
+            "stock": stock,
+            "estado_stock": estado_stock,
+        })
+    except Exception as e:
+        if "Máximo 50" in str(e):
+            raise HTTPException(400, "Máximo 50 productos por emprendimiento")
+        raise HTTPException(400, str(e))
 
+    conn.commit()
     return ProductResponse(
-        id_producto=prod.id_producto,
-        nombre=prod.nombre,
-        descripcion=prod.descripcion,
-        precio=float(prod.precio) if prod.precio else None,
-        imagen_url=prod.imagen_url,
-        estado_stock=prod.estado_stock,
-        stock=prod.stock or 0,
-        activo=prod.activo,
-        fecha_creacion=prod.fecha_creacion
+        id_producto=prod["id_producto"],
+        nombre=prod["nombre"],
+        descripcion=prod.get("descripcion"),
+        precio=float(prod["precio"]) if prod.get("precio") else None,
+        imagen_url=prod.get("imagen_url"),
+        estado_stock=prod["estado_stock"],
+        stock=prod.get("stock") or 0,
+        activo=prod.get("activo", True),
+        fecha_creacion=prod.get("fecha_creacion"),
     )
 
 
@@ -441,142 +454,119 @@ async def actualizar_producto(
     stock: Optional[int] = Form(None),
     estado_stock: Optional[str] = Form(None),
     imagen: Optional[UploadFile] = File(None),
-    current_user: Usuario = Depends(require_role("emprendedor")),
-    db: Session = Depends(get_db)
+    current_user=Depends(require_role("emprendedor")),
+    conn=Depends(get_db_conn),
 ):
-    emp = _get_empresa_usuario(db, current_user)
+    biz_repo = BusinessRepository(conn)
+    emp = biz_repo.get_by_user(current_user["id_usuario"])
     if not emp:
         raise HTTPException(404, "No tienes un negocio registrado aún")
 
-    prod = db.query(Producto).filter(
-        Producto.id_producto == id_producto,
-        Producto.id_emprendimiento == emp.id_emprendimiento
-    ).first()
-    if not prod:
-        raise HTTPException(404, "Producto no encontrado")
-
-    if nombre is not None:
-        prod.nombre = nombre.strip()
-    if descripcion is not None:
-        prod.descripcion = descripcion.strip()
-    if precio is not None:
-        prod.precio = precio
-    if stock is not None:
-        prod.stock = stock
-    if estado_stock is not None:
-        prod.estado_stock = estado_stock
+    imagen_url = None
     if imagen and imagen.filename:
-        prod.imagen_url = await _guardar_imagen(imagen, "productos")
+        imagen_url = await _guardar_imagen(imagen, "productos")
 
-    db.commit()
-    db.refresh(prod)
+    prod_repo = ProductRepository(conn)
+    data = {}
+    if nombre is not None: data["nombre"] = nombre.strip()
+    if descripcion is not None: data["descripcion"] = descripcion.strip()
+    if precio is not None: data["precio"] = precio
+    if stock is not None: data["stock"] = stock
+    if estado_stock is not None: data["estado_stock"] = estado_stock
+    if imagen_url: data["imagen_url"] = imagen_url
 
+    try:
+        prod = prod_repo.update(id_producto, emp["id_emprendimiento"], data)
+    except Exception as e:
+        raise HTTPException(404, str(e))
+
+    conn.commit()
     return ProductResponse(
-        id_producto=prod.id_producto,
-        nombre=prod.nombre,
-        descripcion=prod.descripcion,
-        precio=float(prod.precio) if prod.precio else None,
-        imagen_url=prod.imagen_url,
-        estado_stock=prod.estado_stock,
-        stock=prod.stock or 0,
-        activo=prod.activo,
-        fecha_creacion=prod.fecha_creacion
+        id_producto=prod["id_producto"],
+        nombre=prod["nombre"],
+        descripcion=prod.get("descripcion"),
+        precio=float(prod["precio"]) if prod.get("precio") else None,
+        imagen_url=prod.get("imagen_url"),
+        estado_stock=prod["estado_stock"],
+        stock=prod.get("stock") or 0,
+        activo=prod.get("activo", True),
+        fecha_creacion=prod.get("fecha_creacion"),
     )
 
 
 @router.delete("/products/{id_producto}", response_model=MessageResponse)
 def eliminar_producto(
     id_producto: int,
-    current_user: Usuario = Depends(require_role("emprendedor")),
-    db: Session = Depends(get_db)
+    current_user=Depends(require_role("emprendedor")),
+    conn=Depends(get_db_conn),
 ):
-    emp = _get_empresa_usuario(db, current_user)
+    biz_repo = BusinessRepository(conn)
+    emp = biz_repo.get_by_user(current_user["id_usuario"])
     if not emp:
         raise HTTPException(404, "No tienes un negocio registrado aún")
 
-    prod = db.query(Producto).filter(
-        Producto.id_producto == id_producto,
-        Producto.id_emprendimiento == emp.id_emprendimiento
-    ).first()
-    if not prod:
-        raise HTTPException(404, "Producto no encontrado")
+    prod_repo = ProductRepository(conn)
+    try:
+        prod_repo.delete(id_producto, emp["id_emprendimiento"])
+    except Exception as e:
+        raise HTTPException(404, str(e))
 
-    prod.activo = False
-    db.commit()
-
+    conn.commit()
     return MessageResponse(message="Producto eliminado")
 
 
-# ─── Endpoints — Promociones ───────────────────────────────────────────────
-
 @router.get("/promotions", response_model=list[PromotionResponse])
 def listar_mis_promociones(
-    current_user: Usuario = Depends(require_role("emprendedor")),
-    db: Session = Depends(get_db)
+    current_user=Depends(require_role("emprendedor")),
+    conn=Depends(get_db_conn),
 ):
-    emp = _get_empresa_usuario(db, current_user)
+    biz_repo = BusinessRepository(conn)
+    emp = biz_repo.get_by_user(current_user["id_usuario"])
     if not emp:
         raise HTTPException(404, "No tienes un negocio registrado aún")
 
-    hoy = date.today()
-    promos = db.query(Promocion).filter(
-        Promocion.id_emprendimiento == emp.id_emprendimiento
-    ).order_by(func.coalesce(Promocion.fecha_inicio, '1900-01-01').desc()).all()
-
-    resultado = []
-    for p in promos:
-        if p.estado == "activa" and p.fecha_fin and p.fecha_fin < hoy:
-            p.estado = "vencida"
-            db.commit()
-        resultado.append(PromotionResponse(
-            id_promocion=p.id_promocion,
-            titulo=p.titulo,
-            descripcion=p.descripcion,
-            fecha_inicio=p.fecha_inicio,
-            fecha_fin=p.fecha_fin,
-            estado=p.estado
-        ))
-
-    return resultado
+    promo_repo = PromotionRepository(conn)
+    promos = promo_repo.get_by_business(emp["id_emprendimiento"])
+    return [
+        PromotionResponse(
+            id_promocion=p["id_promocion"],
+            titulo=p["titulo"],
+            descripcion=p.get("descripcion"),
+            fecha_inicio=p.get("fecha_inicio"),
+            fecha_fin=p.get("fecha_fin"),
+            estado=p["estado"],
+        )
+        for p in promos
+    ]
 
 
 @router.post("/promotions", status_code=201, response_model=PromotionResponse)
 def crear_promocion(
     data: PromotionCreate,
-    current_user: Usuario = Depends(require_role("emprendedor")),
-    db: Session = Depends(get_db)
+    current_user=Depends(require_role("emprendedor")),
+    conn=Depends(get_db_conn),
 ):
-    emp = _get_empresa_usuario(db, current_user)
+    biz_repo = BusinessRepository(conn)
+    emp = biz_repo.get_by_user(current_user["id_usuario"])
     if not emp:
         raise HTTPException(404, "No tienes un negocio registrado aún")
 
-    if data.estado == "activa":
-        activas = db.query(func.count(Promocion.id_promocion)).filter(
-            Promocion.id_emprendimiento == emp.id_emprendimiento,
-            Promocion.estado == "activa"
-        ).scalar() or 0
-        if activas >= 10:
+    promo_repo = PromotionRepository(conn)
+    try:
+        promo = promo_repo.create(emp["id_emprendimiento"], data.model_dump())
+    except Exception as e:
+        if "Máximo 10" in str(e):
             raise HTTPException(400, "Máximo 10 promociones activas simultáneas")
+        raise HTTPException(400, str(e))
 
-    promo = Promocion(
-        id_emprendimiento=emp.id_emprendimiento,
-        titulo=data.titulo.strip(),
-        descripcion=data.descripcion.strip() if data.descripcion else None,
-        fecha_inicio=data.fecha_inicio,
-        fecha_fin=data.fecha_fin,
-        estado=data.estado
-    )
-    db.add(promo)
-    db.commit()
-    db.refresh(promo)
-
+    conn.commit()
     return PromotionResponse(
-        id_promocion=promo.id_promocion,
-        titulo=promo.titulo,
-        descripcion=promo.descripcion,
-        fecha_inicio=promo.fecha_inicio,
-        fecha_fin=promo.fecha_fin,
-        estado=promo.estado
+        id_promocion=promo["id_promocion"],
+        titulo=promo["titulo"],
+        descripcion=promo.get("descripcion"),
+        fecha_inicio=promo.get("fecha_inicio"),
+        fecha_fin=promo.get("fecha_fin"),
+        estado=promo["estado"],
     )
 
 
@@ -584,103 +574,83 @@ def crear_promocion(
 def actualizar_promocion(
     id_promocion: int,
     data: PromotionUpdate,
-    current_user: Usuario = Depends(require_role("emprendedor")),
-    db: Session = Depends(get_db)
+    current_user=Depends(require_role("emprendedor")),
+    conn=Depends(get_db_conn),
 ):
-    emp = _get_empresa_usuario(db, current_user)
+    biz_repo = BusinessRepository(conn)
+    emp = biz_repo.get_by_user(current_user["id_usuario"])
     if not emp:
         raise HTTPException(404, "No tienes un negocio registrado aún")
 
-    promo = db.query(Promocion).filter(
-        Promocion.id_promocion == id_promocion,
-        Promocion.id_emprendimiento == emp.id_emprendimiento
-    ).first()
-    if not promo:
-        raise HTTPException(404, "Promoción no encontrada")
+    promo_repo = PromotionRepository(conn)
+    try:
+        promo = promo_repo.update(id_promocion, emp["id_emprendimiento"], data.model_dump(exclude_none=True))
+    except Exception as e:
+        raise HTTPException(404, str(e))
 
-    if data.titulo is not None:
-        promo.titulo = data.titulo.strip()
-    if data.descripcion is not None:
-        promo.descripcion = data.descripcion.strip()
-    if data.fecha_inicio is not None:
-        promo.fecha_inicio = data.fecha_inicio
-    if data.fecha_fin is not None:
-        promo.fecha_fin = data.fecha_fin
-    if data.estado is not None:
-        promo.estado = data.estado
-
-    db.commit()
-    db.refresh(promo)
-
+    conn.commit()
     return PromotionResponse(
-        id_promocion=promo.id_promocion,
-        titulo=promo.titulo,
-        descripcion=promo.descripcion,
-        fecha_inicio=promo.fecha_inicio,
-        fecha_fin=promo.fecha_fin,
-        estado=promo.estado
+        id_promocion=promo["id_promocion"],
+        titulo=promo["titulo"],
+        descripcion=promo.get("descripcion"),
+        fecha_inicio=promo.get("fecha_inicio"),
+        fecha_fin=promo.get("fecha_fin"),
+        estado=promo["estado"],
     )
 
 
 @router.delete("/promotions/{id_promocion}", response_model=MessageResponse)
 def eliminar_promocion(
     id_promocion: int,
-    current_user: Usuario = Depends(require_role("emprendedor")),
-    db: Session = Depends(get_db)
+    current_user=Depends(require_role("emprendedor")),
+    conn=Depends(get_db_conn),
 ):
-    emp = _get_empresa_usuario(db, current_user)
+    biz_repo = BusinessRepository(conn)
+    emp = biz_repo.get_by_user(current_user["id_usuario"])
     if not emp:
         raise HTTPException(404, "No tienes un negocio registrado aún")
 
-    promo = db.query(Promocion).filter(
-        Promocion.id_promocion == id_promocion,
-        Promocion.id_emprendimiento == emp.id_emprendimiento
-    ).first()
-    if not promo:
-        raise HTTPException(404, "Promoción no encontrada")
+    promo_repo = PromotionRepository(conn)
+    try:
+        promo_repo.delete(id_promocion, emp["id_emprendimiento"])
+    except Exception as e:
+        raise HTTPException(404, str(e))
 
-    db.delete(promo)
-    db.commit()
-
+    conn.commit()
     return MessageResponse(message="Promoción eliminada")
 
 
-# ─── Endpoints — Stats ─────────────────────────────────────────────────────
-
 @router.get("/stats", response_model=StatsResponse)
 def obtener_estadisticas(
-    current_user: Usuario = Depends(require_role("emprendedor")),
-    db: Session = Depends(get_db)
+    current_user=Depends(require_role("emprendedor")),
+    conn=Depends(get_db_conn),
 ):
-    emp = _get_empresa_usuario(db, current_user)
+    biz_repo = BusinessRepository(conn)
+    emp = biz_repo.get_by_user(current_user["id_usuario"])
     if not emp:
         raise HTTPException(404, "No tienes un negocio registrado aún")
 
-    productos_activos = db.query(func.count(Producto.id_producto)).filter(
-        Producto.id_emprendimiento == emp.id_emprendimiento,
-        Producto.activo == True
-    ).scalar() or 0
+    prod_repo = ProductRepository(conn)
+    products = prod_repo.get_by_business(emp["id_emprendimiento"], page=1, size=1000)
+    productos_activos = sum(1 for p in products["items"] if p.get("activo", True))
 
-    resenas_recientes = db.query(Comentario).options(
-        joinedload(Comentario.usuario)
-    ).filter(
-        Comentario.id_emprendimiento == emp.id_emprendimiento
-    ).order_by(Comentario.fecha.desc()).limit(5).all()
+    review_repo = ReviewRepository(conn)
+    reviews = review_repo.get_by_business(emp["id_emprendimiento"], page=1, size=5)
 
     actividad = []
-    for r in resenas_recientes:
-        nombre = f"{r.usuario.nombre} {r.usuario.apellido}" if r.usuario else "Alguien"
+    for r in reviews["items"]:
+        nombre = f"{r.get('usuario_nombre') or ''} {r.get('usuario_apellido') or ''}".strip() or "Alguien"
         actividad.append(ActividadReciente(
             tipo="resena",
             mensaje=f"Nueva reseña de {nombre}",
-            fecha=r.fecha
+            fecha=r["fecha"],
         ))
 
-    if emp.estado_verificacion:
+    if emp.get("estado_verificacion"):
         actividad.append(ActividadReciente(
             tipo="verificacion",
-            mensaje=f"Perfil {emp.estado_verificacion}",
-            fecha=emp.fecha_registro or datetime.now(timezone.utc)
+            mensaje=f"Perfil {emp['estado_verificacion']}",
+            fecha=emp.get("fecha_registro") or datetime.now(timezone.utc),
         ))
 
     return StatsResponse(
@@ -689,27 +659,26 @@ def obtener_estadisticas(
         clics_perfil=0,
         clics_incremento=0,
         productos_activos=productos_activos,
-        estado_negocio=emp.estado_verificacion,
-        actividad_reciente=actividad
+        estado_negocio=emp.get("estado_verificacion"),
+        actividad_reciente=actividad,
     )
 
-
-# ─── Endpoints — Settings ──────────────────────────────────────────────────
 
 @router.put("/settings/password", response_model=MessageResponse)
 def cambiar_contrasena(
     data: PasswordChange,
-    current_user: Usuario = Depends(require_role("emprendedor")),
-    db: Session = Depends(get_db)
+    current_user=Depends(require_role("emprendedor")),
+    conn=Depends(get_db_conn),
 ):
-    if not pwd_context.verify(data.contrasena_actual, current_user.contrasena_hash):
+    if not pwd_context.verify(data.contrasena_actual, current_user.get("contrasena_hash", "")):
         raise HTTPException(400, "La contraseña actual es incorrecta")
-
     if data.nueva_contrasena != data.confirmar_contrasena:
         raise HTTPException(400, "Las contraseñas no coinciden")
 
-    current_user.contrasena_hash = pwd_context.hash(data.nueva_contrasena)
-    db.commit()
+    from src.repositories.user_repository import UserRepository
+    user_repo = UserRepository(conn)
+    user_repo.change_password(current_user["id_usuario"], pwd_context.hash(data.nueva_contrasena))
+    conn.commit()
 
     return MessageResponse(message="Contraseña actualizada exitosamente")
 
@@ -717,8 +686,8 @@ def cambiar_contrasena(
 @router.put("/settings/notifications", response_model=MessageResponse)
 def guardar_preferencias(
     data: NotificationPreferences,
-    current_user: Usuario = Depends(require_role("emprendedor")),
-    db: Session = Depends(get_db)
+    current_user=Depends(require_role("emprendedor")),
+    conn=Depends(get_db_conn),
 ):
-    db.commit()
+    conn.commit()
     return MessageResponse(message="Preferencias guardadas")

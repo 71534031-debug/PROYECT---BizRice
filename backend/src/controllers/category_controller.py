@@ -1,16 +1,12 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
-from sqlalchemy import func
 from pydantic import BaseModel
 from typing import Optional
 
-from src.config.db import get_db
-from src.models.category import Categoria
-from src.models.business import Emprendimiento
+from src.config.db import get_db_conn
+from src.repositories.base_repository import BaseRepository
 
 router = APIRouter()
 
-# ─── Schemas ───────────────────────────────────────────────────────────────
 
 class CategoryResponse(BaseModel):
     id_categoria: int
@@ -22,31 +18,23 @@ class CategoryResponse(BaseModel):
     class Config:
         from_attributes = True
 
+
 class CategoriesListResponse(BaseModel):
     items: list[CategoryResponse]
 
-# ─── Endpoints ─────────────────────────────────────────────────────────────
 
 @router.get("", response_model=CategoriesListResponse)
-def listar_categorias(db: Session = Depends(get_db)):
-    categorias = db.query(
-        Categoria,
-        func.count(Emprendimiento.id_emprendimiento).label("total_negocios")
-    ).outerjoin(
-        Emprendimiento,
-        (Emprendimiento.id_categoria == Categoria.id_categoria) &
-        (Emprendimiento.estado_verificacion == "aprobado")
-    ).group_by(Categoria.id_categoria, Categoria.nombre, Categoria.descripcion, Categoria.icono_url).order_by(Categoria.nombre).all()
-
+def listar_categorias(conn=Depends(get_db_conn)):
+    repo = BaseRepository(conn)
+    rows = repo.execute_sp("sp_GetCategories")
     items = [
         CategoryResponse(
-            id_categoria=cat.id_categoria,
-            nombre=cat.nombre,
-            descripcion=cat.descripcion,
-            icono_url=cat.icono_url,
-            total_negocios=total
+            id_categoria=r["id_categoria"],
+            nombre=r["nombre"],
+            descripcion=r.get("descripcion"),
+            icono_url=r.get("icono_url"),
+            total_negocios=r.get("total_emprendimientos", 0),
         )
-        for cat, total in categorias
+        for r in rows
     ]
-
     return CategoriesListResponse(items=items)

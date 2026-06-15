@@ -56,11 +56,11 @@ def auto_seed():
     """Seed automático al iniciar — fuerza recarga si existe data parcial."""
     try:
         from seed_full import seed
-        print("🌱 Ejecutando seed automático (fuerza recarga)...")
+        print("[SEED] Ejecutando seed automatico (fuerza recarga)...")
         seed(force=True)
-        print("✅ Seed automático completado.")
+        print("[SEED] Completado.")
     except Exception as e:
-        print(f"⚠️  Seed automático omitido: {e}")
+        print(f"[SEED] Omitido: {e}")
 
 @app.on_event("startup")
 def startup():

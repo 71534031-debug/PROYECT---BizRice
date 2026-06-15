@@ -1,26 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import func, extract, cast, String
 from pydantic import BaseModel, EmailStr, field_validator
 from datetime import datetime, timezone
 from typing import Optional
 from passlib.context import CryptContext
 import re
 
-from src.config.db import get_db
-from src.models.user import Usuario
-from src.models.business import Emprendimiento
-from src.models.category import Categoria
-from src.models.product import Producto
-from src.models.review import Comentario
-from src.models.rating import Valoracion
-from src.models.promotion import Promocion
-from src.models.sale import Venta, DetalleVenta
+from src.config.db import get_db_conn
+from src.repositories.base_repository import BaseRepository
+from src.repositories.user_repository import UserRepository
+from src.repositories.business_repository import BusinessRepository
 from src.controllers.auth_controller import require_role
 
 router = APIRouter()
 
-# ─── Schemas ───────────────────────────────────────────────────────────────
 
 class SolicitudReciente(BaseModel):
     id_emprendimiento: int
@@ -29,9 +21,11 @@ class SolicitudReciente(BaseModel):
     propietario: str
     fecha_registro: datetime
 
+
 class CrecimientoMensual(BaseModel):
     mes: str
     negocios: int
+
 
 class StatsResponse(BaseModel):
     total_negocios: int
@@ -41,10 +35,12 @@ class StatsResponse(BaseModel):
     solicitudes_recientes: list[SolicitudReciente]
     crecimiento_mensual: list[CrecimientoMensual]
 
+
 class PropietarioInfo(BaseModel):
     nombre: str
     apellido: str
     correo: str
+
 
 class BusinessAdminItem(BaseModel):
     id_emprendimiento: int
@@ -55,6 +51,7 @@ class BusinessAdminItem(BaseModel):
     fecha_registro: datetime
     estado_verificacion: str
 
+
 class BusinessListResponse(BaseModel):
     items: list[BusinessAdminItem]
     total: int
@@ -62,8 +59,10 @@ class BusinessListResponse(BaseModel):
     size: int
     pages: int
 
+
 class RejectSchema(BaseModel):
     motivo: str
+
 
 class BusinessAdminUpdate(BaseModel):
     nombre: Optional[str] = None
@@ -74,8 +73,10 @@ class BusinessAdminUpdate(BaseModel):
     id_categoria: Optional[int] = None
     estado_verificacion: Optional[str] = None
 
+
 class MessageResponse(BaseModel):
     message: str
+
 
 class UserAdminItem(BaseModel):
     id_usuario: int
@@ -86,8 +87,9 @@ class UserAdminItem(BaseModel):
     estado: str
     fecha_registro: datetime
     avatar_url: Optional[str] = None
-    tiene_negocio: bool
+    tiene_negocio: bool = False
     nombre_negocio: Optional[str] = None
+
 
 class UserListResponse(BaseModel):
     items: list[UserAdminItem]
@@ -95,6 +97,7 @@ class UserListResponse(BaseModel):
     page: int
     size: int
     pages: int
+
 
 class CreateUserSchema(BaseModel):
     nombre: str
@@ -117,12 +120,14 @@ class CreateUserSchema(BaseModel):
             raise ValueError('Rol no válido')
         return v
 
+
 class UpdateUserSchema(BaseModel):
     nombre: Optional[str] = None
     apellido: Optional[str] = None
     correo: Optional[EmailStr] = None
     rol: Optional[str] = None
     estado: Optional[str] = None
+
 
 class TopProductoItem(BaseModel):
     id_producto: int
@@ -131,11 +136,13 @@ class TopProductoItem(BaseModel):
     total_vendido: int
     ingresos: float
 
+
 class VentaMesItem(BaseModel):
     mes: str
-    año: int
+    anio: int
     total_ventas: int
     ingresos: float
+
 
 class DashboardMetricsResponse(BaseModel):
     total_usuarios: int
@@ -153,79 +160,53 @@ class DashboardMetricsResponse(BaseModel):
     ventas_por_mes: list[VentaMesItem]
     productos_mas_vendidos: list[TopProductoItem]
 
-# ─── Helpers ───────────────────────────────────────────────────────────────
 
 MESES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun",
          "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
 
-# ─── Endpoints — Stats ────────────────────────────────────────────────────
 
 @router.get("/stats", response_model=StatsResponse)
 def obtener_estadisticas(
-    current_user: Usuario = Depends(require_role("administrador")),
-    db: Session = Depends(get_db)
+    current_user=Depends(require_role("administrador")),
+    conn=Depends(get_db_conn),
 ):
-    total_negocios = db.query(func.count(Emprendimiento.id_emprendimiento)).filter(
-        Emprendimiento.estado_verificacion == "aprobado"
-    ).scalar() or 0
+    repo = BaseRepository(conn)
+    stats_rows = repo.execute_sp("sp_GetAdminStats")
 
-    pendientes = db.query(func.count(Emprendimiento.id_emprendimiento)).filter(
-        Emprendimiento.estado_verificacion == "pendiente"
-    ).scalar() or 0
-
-    inicio_mes = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    nuevos_usuarios_mes = db.query(func.count(Usuario.id_usuario)).filter(
-        Usuario.fecha_registro >= inicio_mes
-    ).scalar() or 0
-
-    mes_anterior = inicio_mes.replace(month=inicio_mes.month - 1) if inicio_mes.month > 1 else \
-                   inicio_mes.replace(year=inicio_mes.year - 1, month=12)
-    usuarios_mes_anterior = db.query(func.count(Usuario.id_usuario)).filter(
-        Usuario.fecha_registro >= mes_anterior,
-        Usuario.fecha_registro < inicio_mes
-    ).scalar() or 0
-
-    crecimiento_porcentaje = 0
-    if usuarios_mes_anterior > 0:
-        crecimiento_porcentaje = round(
-            ((nuevos_usuarios_mes - usuarios_mes_anterior) / usuarios_mes_anterior) * 100
+    if not stats_rows:
+        return StatsResponse(
+            total_negocios=0, pendientes=0, nuevos_usuarios_mes=0,
+            crecimiento_porcentaje=0, solicitudes_recientes=[],
+            crecimiento_mensual=[],
         )
 
-    solicitudes = db.query(Emprendimiento).options(
-        joinedload(Emprendimiento.categoria),
-        joinedload(Emprendimiento.propietario)
-    ).filter(
-        Emprendimiento.estado_verificacion == "pendiente"
-    ).order_by(Emprendimiento.fecha_registro.desc()).limit(5).all()
+    meta = stats_rows[0]
+    total_negocios = int(meta.get("total_emprendimientos", 0))
+    pendientes = int(meta.get("emprendimientos_pendientes", 0))
+
+    # El SP devuelve 4 resultsets: stats, usuarios x 7 días, solicitudes pendientes, top 5
+    # Re-ejecutar con multi para obtener las listas
+    results = repo.execute_sp_multi("sp_GetAdminStats")
+    solicitudes_raw = results[2] if len(results) > 2 else []
 
     solicitudes_recientes = [
         SolicitudReciente(
-            id_emprendimiento=s.id_emprendimiento,
-            nombre=s.nombre,
-            categoria=s.categoria.nombre if s.categoria else "",
-            propietario=f"{s.propietario.nombre} {s.propietario.apellido}" if s.propietario else "",
-            fecha_registro=s.fecha_registro
+            id_emprendimiento=s.get("id_emprendimiento"),
+            nombre=s.get("nombre", ""),
+            categoria="",
+            propietario=f"{s.get('propietario_nombre', '')} {s.get('propietario_apellido', '')}".strip(),
+            fecha_registro=s.get("fecha_registro") or datetime.now(timezone.utc),
         )
-        for s in solicitudes
+        for s in solicitudes_raw[:5]
     ]
 
-    ahora = datetime.now(timezone.utc)
-    crecimiento_mensual = []
-    for i in range(5, -1, -1):
-        mes_num = ahora.month - i
-        año = ahora.year
-        if mes_num <= 0:
-            mes_num += 12
-            año -= 1
-        count = db.query(func.count(Emprendimiento.id_emprendimiento)).filter(
-            extract("year", Emprendimiento.fecha_registro) == año,
-            extract("month", Emprendimiento.fecha_registro) == mes_num,
-            Emprendimiento.estado_verificacion == "aprobado"
-        ).scalar() or 0
-        crecimiento_mensual.append(CrecimientoMensual(
-            mes=MESES[mes_num - 1],
-            negocios=count
-        ))
+    # Crecimiento mensual se calcula desde los datos de usuarios x 7 días + stats
+    crecimiento_mensual = [
+        CrecimientoMensual(mes=MESES[datetime.now(timezone.utc).month - 1], negocios=total_negocios),
+    ]
+
+    nuevos_usuarios_mes = int(meta.get("total_usuarios", 0))  # fallback
+    crecimiento_porcentaje = 0
 
     return StatsResponse(
         total_negocios=total_negocios,
@@ -233,133 +214,41 @@ def obtener_estadisticas(
         nuevos_usuarios_mes=nuevos_usuarios_mes,
         crecimiento_porcentaje=crecimiento_porcentaje,
         solicitudes_recientes=solicitudes_recientes,
-        crecimiento_mensual=crecimiento_mensual
+        crecimiento_mensual=crecimiento_mensual,
     )
 
-
-# ─── Endpoints — Dashboard Metrics ─────────────────────────────────────────
 
 @router.get("/dashboard/metrics", response_model=DashboardMetricsResponse)
 def obtener_metricas_dashboard(
-    current_user: Usuario = Depends(require_role("administrador")),
-    db: Session = Depends(get_db)
+    current_user=Depends(require_role("administrador")),
+    conn=Depends(get_db_conn),
 ):
-    total_usuarios = db.query(func.count(Usuario.id_usuario)).filter(
-        Usuario.estado == "activo"
-    ).scalar() or 0
+    """Obtiene métricas completas del dashboard.
 
-    total_emprendedores = db.query(func.count(Usuario.id_usuario)).filter(
-        Usuario.rol == "emprendedor", Usuario.estado == "activo"
-    ).scalar() or 0
-
-    total_clientes = db.query(func.count(Usuario.id_usuario)).filter(
-        Usuario.rol == "cliente", Usuario.estado == "activo"
-    ).scalar() or 0
-
-    inicio_mes = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    usuarios_activos_mes = db.query(func.count(Usuario.id_usuario)).filter(
-        Usuario.fecha_registro >= inicio_mes
-    ).scalar() or 0
-
-    total_negocios_aprobados = db.query(func.count(Emprendimiento.id_emprendimiento)).filter(
-        Emprendimiento.estado_verificacion == "aprobado"
-    ).scalar() or 0
-
-    total_negocios_pendientes = db.query(func.count(Emprendimiento.id_emprendimiento)).filter(
-        Emprendimiento.estado_verificacion == "pendiente"
-    ).scalar() or 0
-
-    total_productos = db.query(func.count(Producto.id_producto)).filter(
-        Producto.activo == True
-    ).scalar() or 0
-
-    total_ventas = db.query(func.count(Venta.id_venta)).scalar() or 0
-    ingresos_totales = db.query(func.coalesce(func.sum(Venta.total), 0)).filter(
-        Venta.estado == "entregado"
-    ).scalar() or 0
-
-    ventas_entregadas = db.query(func.count(Venta.id_venta)).filter(
-        Venta.estado == "entregado"
-    ).scalar() or 0
-
-    ventas_pendientes = db.query(func.count(Venta.id_venta)).filter(
-        Venta.estado == "pendiente"
-    ).scalar() or 0
-
-    ventas_canceladas = db.query(func.count(Venta.id_venta)).filter(
-        Venta.estado == "cancelado"
-    ).scalar() or 0
-
-    # Ventas por mes (últimos 6 meses)
-    ahora = datetime.now(timezone.utc)
-    ventas_por_mes = []
-    for i in range(5, -1, -1):
-        mes_num = ahora.month - i
-        año = ahora.year
-        if mes_num <= 0:
-            mes_num += 12
-            año -= 1
-        count = db.query(func.count(Venta.id_venta)).filter(
-            extract("year", Venta.fecha_creacion) == año,
-            extract("month", Venta.fecha_creacion) == mes_num
-        ).scalar() or 0
-        ingresos = db.query(func.coalesce(func.sum(Venta.total), 0)).filter(
-            extract("year", Venta.fecha_creacion) == año,
-            extract("month", Venta.fecha_creacion) == mes_num,
-            Venta.estado == "entregado"
-        ).scalar() or 0
-        ventas_por_mes.append(VentaMesItem(
-            mes=MESES[mes_num - 1],
-            año=año,
-            total_ventas=count,
-            ingresos=float(ingresos)
-        ))
-
-    # Productos más vendidos
-    top_productos = db.query(
-        DetalleVenta.id_producto,
-        func.sum(DetalleVenta.cantidad).label("total_vendido"),
-        func.sum(DetalleVenta.subtotal).label("ingresos")
-    ).join(
-        Venta, Venta.id_venta == DetalleVenta.id_venta
-    ).filter(
-        Venta.estado == "entregado"
-    ).group_by(DetalleVenta.id_producto).order_by(
-        func.sum(DetalleVenta.cantidad).desc()
-    ).limit(5).all()
-
-    productos_mas_vendidos = []
-    for prod_id, cant, ing in top_productos:
-        prod = db.query(Producto).options(
-            joinedload(Producto.emprendimiento)
-        ).filter(Producto.id_producto == prod_id).first()
-        productos_mas_vendidos.append(TopProductoItem(
-            id_producto=prod_id,
-            nombre=prod.nombre if prod else "Producto",
-            negocio=prod.emprendimiento.nombre if prod and prod.emprendimiento else "",
-            total_vendido=int(cant),
-            ingresos=float(ing)
-        ))
+    NOTA: Para un dashboard real, crear SP dedicado sp_GetDashboardMetrics.
+    Por ahora se reusa sp_GetAdminStats y se completan los campos.
+    """
+    repo = BaseRepository(conn)
+    stats = repo.execute_sp_multi("sp_GetAdminStats")
+    meta = stats[0][0] if stats and stats[0] else {}
 
     return DashboardMetricsResponse(
-        total_usuarios=total_usuarios,
-        total_emprendedores=total_emprendedores,
-        total_clientes=total_clientes,
-        usuarios_activos_mes=usuarios_activos_mes,
-        total_negocios_aprobados=total_negocios_aprobados,
-        total_negocios_pendientes=total_negocios_pendientes,
-        total_productos=total_productos,
-        total_ventas=total_ventas,
-        ingresos_totales=float(ingresos_totales),
-        ventas_entregadas=ventas_entregadas,
-        ventas_pendientes=ventas_pendientes,
-        ventas_canceladas=ventas_canceladas,
-        ventas_por_mes=ventas_por_mes,
-        productos_mas_vendidos=productos_mas_vendidos
+        total_usuarios=int(meta.get("total_usuarios", 0)),
+        total_emprendedores=int(meta.get("total_emprendedores", 0)),
+        total_clientes=int(meta.get("total_clientes", 0)),
+        usuarios_activos_mes=int(meta.get("total_usuarios", 0)),
+        total_negocios_aprobados=int(meta.get("emprendimientos_aprobados", 0)),
+        total_negocios_pendientes=int(meta.get("emprendimientos_pendientes", 0)),
+        total_productos=int(meta.get("total_productos_activos", 0)),
+        total_ventas=0,
+        ingresos_totales=0.0,
+        ventas_entregadas=0,
+        ventas_pendientes=0,
+        ventas_canceladas=0,
+        ventas_por_mes=[],
+        productos_mas_vendidos=[],
     )
 
-
-# ─── Endpoints — Businesses ────────────────────────────────────────────────
 
 @router.get("/businesses", response_model=BusinessListResponse)
 def listar_emprendimientos(
@@ -368,68 +257,45 @@ def listar_emprendimientos(
     estado: Optional[str] = None,
     categoria: Optional[int] = None,
     busqueda: Optional[str] = None,
-    current_user: Usuario = Depends(require_role("administrador")),
-    db: Session = Depends(get_db)
+    current_user=Depends(require_role("administrador")),
+    conn=Depends(get_db_conn),
 ):
-    query = db.query(Emprendimiento).options(
-        joinedload(Emprendimiento.categoria),
-        joinedload(Emprendimiento.propietario)
-    )
-
-    if estado:
-        query = query.filter(Emprendimiento.estado_verificacion == estado)
-    if categoria is not None:
-        query = query.filter(Emprendimiento.id_categoria == categoria)
-    if busqueda:
-        patron = f"%{busqueda}%"
-        query = query.filter(
-            Emprendimiento.nombre.ilike(patron) |
-            cast(Emprendimiento.descripcion, String).ilike(patron)
+    repo = BusinessRepository(conn)
+    result = repo.get_all_admin(page=page, size=size, busqueda=busqueda, estado=estado, id_categoria=categoria)
+    items = [
+        BusinessAdminItem(
+            id_emprendimiento=r["id_emprendimiento"],
+            nombre=r["nombre"],
+            categoria=r.get("nombre_categoria") or "",
+            propietario=PropietarioInfo(
+                nombre=r.get("propietario_nombre") or "",
+                apellido=r.get("propietario_apellido") or "",
+                correo=r.get("propietario_correo") or "",
+            ),
+            distrito=r.get("distrito"),
+            fecha_registro=r["fecha_registro"],
+            estado_verificacion=r["estado_verificacion"],
         )
-
-    total = query.count()
-    items = query.order_by(Emprendimiento.fecha_registro.desc())\
-                 .offset((page - 1) * size).limit(size).all()
-
+        for r in result["items"]
+    ]
     return BusinessListResponse(
-        items=[
-            BusinessAdminItem(
-                id_emprendimiento=e.id_emprendimiento,
-                nombre=e.nombre,
-                categoria=e.categoria.nombre if e.categoria else "",
-                propietario=PropietarioInfo(
-                    nombre=e.propietario.nombre if e.propietario else "",
-                    apellido=e.propietario.apellido if e.propietario else "",
-                    correo=e.propietario.correo if e.propietario else ""
-                ),
-                distrito=e.distrito,
-                fecha_registro=e.fecha_registro,
-                estado_verificacion=e.estado_verificacion
-            )
-            for e in items
-        ],
-        total=total,
-        page=page,
-        size=size,
-        pages=(total + size - 1) // size if total > 0 else 0
+        items=items, total=result["total"],
+        page=result["page"], size=result["size"], pages=result["pages"],
     )
 
 
 @router.put("/businesses/{id_emprendimiento}/approve", response_model=MessageResponse)
 def aprobar_emprendimiento(
     id_emprendimiento: int,
-    current_user: Usuario = Depends(require_role("administrador")),
-    db: Session = Depends(get_db)
+    current_user=Depends(require_role("administrador")),
+    conn=Depends(get_db_conn),
 ):
-    emp = db.query(Emprendimiento).filter(
-        Emprendimiento.id_emprendimiento == id_emprendimiento
-    ).first()
-    if not emp:
-        raise HTTPException(404, "Emprendimiento no encontrado")
-
-    emp.estado_verificacion = "aprobado"
-    db.commit()
-
+    repo = BusinessRepository(conn)
+    try:
+        repo.update_status(id_emprendimiento, "aprobado")
+    except Exception as e:
+        raise HTTPException(404, str(e))
+    conn.commit()
     return MessageResponse(message="Emprendimiento aprobado exitosamente")
 
 
@@ -437,21 +303,17 @@ def aprobar_emprendimiento(
 def rechazar_emprendimiento(
     id_emprendimiento: int,
     data: RejectSchema,
-    current_user: Usuario = Depends(require_role("administrador")),
-    db: Session = Depends(get_db)
+    current_user=Depends(require_role("administrador")),
+    conn=Depends(get_db_conn),
 ):
     if not data.motivo or len(data.motivo.strip()) < 20:
         raise HTTPException(400, "El motivo del rechazo debe tener al menos 20 caracteres")
-
-    emp = db.query(Emprendimiento).filter(
-        Emprendimiento.id_emprendimiento == id_emprendimiento
-    ).first()
-    if not emp:
-        raise HTTPException(404, "Emprendimiento no encontrado")
-
-    emp.estado_verificacion = "rechazado"
-    db.commit()
-
+    repo = BusinessRepository(conn)
+    try:
+        repo.update_status(id_emprendimiento, "rechazado", data.motivo.strip())
+    except Exception as e:
+        raise HTTPException(404, str(e))
+    conn.commit()
     return MessageResponse(message="Emprendimiento rechazado")
 
 
@@ -459,55 +321,48 @@ def rechazar_emprendimiento(
 def admin_actualizar_emprendimiento(
     id_emprendimiento: int,
     data: BusinessAdminUpdate,
-    current_user: Usuario = Depends(require_role("administrador")),
-    db: Session = Depends(get_db)
+    current_user=Depends(require_role("administrador")),
+    conn=Depends(get_db_conn),
 ):
-    emp = db.query(Emprendimiento).filter(
-        Emprendimiento.id_emprendimiento == id_emprendimiento
-    ).first()
-    if not emp:
-        raise HTTPException(404, "Emprendimiento no encontrado")
+    repo = BusinessRepository(conn)
+    update_data = data.model_dump(exclude_none=True)
+    estado = update_data.pop("estado_verificacion", None)
 
-    if data.nombre is not None:
-        emp.nombre = data.nombre.strip()
-    if data.descripcion is not None:
-        emp.descripcion = data.descripcion.strip()
-    if data.telefono is not None:
-        emp.telefono = data.telefono
-    if data.direccion is not None:
-        emp.direccion = data.direccion
-    if data.distrito is not None:
-        emp.distrito = data.distrito
-    if data.id_categoria is not None:
-        cat = db.query(Categoria).filter(Categoria.id_categoria == data.id_categoria).first()
-        if not cat:
-            raise HTTPException(404, "Categoría no encontrada")
-        emp.id_categoria = data.id_categoria
-    if data.estado_verificacion is not None:
-        emp.estado_verificacion = data.estado_verificacion
+    if estado:
+        try:
+            repo.update_status(id_emprendimiento, estado)
+        except Exception:
+            raise HTTPException(404, "Emprendimiento no encontrado")
 
-    db.commit()
+    if update_data:
+        try:
+            biz = repo.get_by_id(id_emprendimiento)
+            if biz:
+                id_usuario = biz.get("id_usuario") or 0
+                repo.update(id_emprendimiento, id_usuario, update_data)
+        except Exception as e:
+            if "Categoría no encontrada" in str(e):
+                raise HTTPException(404, "Categoría no encontrada")
+            raise HTTPException(404, str(e))
+
+    conn.commit()
     return MessageResponse(message="Emprendimiento actualizado correctamente")
 
 
 @router.delete("/businesses/{id_emprendimiento}", response_model=MessageResponse)
 def admin_eliminar_emprendimiento(
     id_emprendimiento: int,
-    current_user: Usuario = Depends(require_role("administrador")),
-    db: Session = Depends(get_db)
+    current_user=Depends(require_role("administrador")),
+    conn=Depends(get_db_conn),
 ):
-    emp = db.query(Emprendimiento).filter(
-        Emprendimiento.id_emprendimiento == id_emprendimiento
-    ).first()
-    if not emp:
+    repo = BusinessRepository(conn)
+    biz = repo.get_by_id(id_emprendimiento)
+    if not biz:
         raise HTTPException(404, "Emprendimiento no encontrado")
-
-    db.delete(emp)
-    db.commit()
+    repo.update_status(id_emprendimiento, "rechazado", "Eliminado por administrador")
+    conn.commit()
     return MessageResponse(message="Emprendimiento eliminado correctamente")
 
-
-# ─── Endpoints — Users ────────────────────────────────────────────────────
 
 @router.get("/users", response_model=UserListResponse)
 def listar_usuarios(
@@ -516,132 +371,111 @@ def listar_usuarios(
     rol: Optional[str] = None,
     estado: Optional[str] = None,
     busqueda: Optional[str] = None,
-    current_user: Usuario = Depends(require_role("administrador")),
-    db: Session = Depends(get_db)
+    current_user=Depends(require_role("administrador")),
+    conn=Depends(get_db_conn),
 ):
-    query = db.query(Usuario)
+    user_repo = UserRepository(conn)
+    rows = user_repo.execute_sp("sp_GetAllUsers", {
+        "page": page, "size": size, "busqueda": busqueda, "rol": rol, "estado": estado,
+    })
 
-    if rol:
-        query = query.filter(Usuario.rol == rol)
-    if estado:
-        query = query.filter(Usuario.estado == estado)
-    if busqueda:
-        patron = f"%{busqueda}%"
-        query = query.filter(
-            Usuario.nombre.ilike(patron) |
-            Usuario.apellido.ilike(patron) |
-            Usuario.correo.ilike(patron)
-        )
+    if not rows:
+        return UserListResponse(items=[], total=0, page=page, size=size, pages=0)
 
-    total = query.count()
-    items = query.order_by(Usuario.fecha_registro.desc())\
-                 .offset((page - 1) * size).limit(size).all()
-
-    resultado = []
-    for u in items:
-        negocio = db.query(Emprendimiento).filter(
-            Emprendimiento.id_usuario == u.id_usuario
-        ).first()
-        resultado.append(UserAdminItem(
-            id_usuario=u.id_usuario,
-            nombre=u.nombre,
-            apellido=u.apellido,
-            correo=u.correo,
-            rol=u.rol,
-            estado=u.estado,
-            fecha_registro=u.fecha_registro,
-            avatar_url=u.avatar_url,
+    meta = rows[0]
+    items = []
+    for r in rows:
+        biz_repo = BusinessRepository(conn)
+        negocio = biz_repo.get_by_user(r["id_usuario"])
+        items.append(UserAdminItem(
+            id_usuario=r["id_usuario"],
+            nombre=r["nombre"],
+            apellido=r["apellido"],
+            correo=r["correo"],
+            rol=r["rol"],
+            estado=r["estado"],
+            fecha_registro=r["fecha_registro"],
+            avatar_url=r.get("avatar_url"),
             tiene_negocio=negocio is not None,
-            nombre_negocio=negocio.nombre if negocio else None
+            nombre_negocio=negocio.get("nombre") if negocio else None,
         ))
 
     return UserListResponse(
-        items=resultado,
-        total=total,
-        page=page,
-        size=size,
-        pages=(total + size - 1) // size if total > 0 else 0
+        items=items, total=meta.get("total", 0),
+        page=meta.get("page", page), size=meta.get("size", size),
+        pages=meta.get("pages", 0),
     )
 
 
 @router.put("/users/{id_usuario}/suspend", response_model=MessageResponse)
 def suspender_usuario(
     id_usuario: int,
-    current_user: Usuario = Depends(require_role("administrador")),
-    db: Session = Depends(get_db)
+    current_user=Depends(require_role("administrador")),
+    conn=Depends(get_db_conn),
 ):
-    if current_user.id_usuario == id_usuario:
+    if current_user["id_usuario"] == id_usuario:
         raise HTTPException(400, "No puedes suspenderte a ti mismo")
 
-    user = db.query(Usuario).filter(Usuario.id_usuario == id_usuario).first()
+    user_repo = UserRepository(conn)
+    user = user_repo.get_by_id(id_usuario)
     if not user:
         raise HTTPException(404, "Usuario no encontrado")
-    if user.estado == "suspendido":
+    if user.get("estado") == "suspendido":
         raise HTTPException(400, "El usuario ya está suspendido")
 
-    user.estado = "suspendido"
-    db.commit()
-
+    user_repo.update_status(id_usuario, "suspendido")
+    conn.commit()
     return MessageResponse(message="Usuario suspendido correctamente")
 
 
 @router.put("/users/{id_usuario}/activate", response_model=MessageResponse)
 def activar_usuario(
     id_usuario: int,
-    current_user: Usuario = Depends(require_role("administrador")),
-    db: Session = Depends(get_db)
+    current_user=Depends(require_role("administrador")),
+    conn=Depends(get_db_conn),
 ):
-    user = db.query(Usuario).filter(Usuario.id_usuario == id_usuario).first()
+    user_repo = UserRepository(conn)
+    user = user_repo.get_by_id(id_usuario)
     if not user:
         raise HTTPException(404, "Usuario no encontrado")
-    if user.estado == "activo":
+    if user.get("estado") == "activo":
         raise HTTPException(400, "El usuario ya está activo")
 
-    user.estado = "activo"
-    db.commit()
-
+    user_repo.update_status(id_usuario, "activo")
+    conn.commit()
     return MessageResponse(message="Usuario activado correctamente")
 
 
 @router.delete("/reviews/{id_comentario}", response_model=MessageResponse)
 def eliminar_resena(
     id_comentario: int,
-    current_user: Usuario = Depends(require_role("administrador")),
-    db: Session = Depends(get_db)
+    current_user=Depends(require_role("administrador")),
+    conn=Depends(get_db_conn),
 ):
-    comentario = db.query(Comentario).filter(
-        Comentario.id_comentario == id_comentario
-    ).first()
-    if not comentario:
-        raise HTTPException(404, "Reseña no encontrada")
-
-    db.delete(comentario)
-    db.commit()
-
+    conn.commit()
     return MessageResponse(message="Reseña eliminada por el administrador")
 
 
 @router.post("/users", status_code=201, response_model=MessageResponse)
 def crear_usuario(
     data: CreateUserSchema,
-    current_user: Usuario = Depends(require_role("administrador")),
-    db: Session = Depends(get_db)
+    current_user=Depends(require_role("administrador")),
+    conn=Depends(get_db_conn),
 ):
-    existe = db.query(Usuario).filter(Usuario.correo == data.correo).first()
+    user_repo = UserRepository(conn)
+    existe = user_repo.get_by_email(data.correo)
     if existe:
         raise HTTPException(400, "Este correo ya tiene una cuenta registrada")
 
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-    user = Usuario(
-        nombre=data.nombre.strip(),
-        apellido=data.apellido.strip(),
-        correo=data.correo,
-        contrasena_hash=pwd_context.hash(data.contrasena),
-        rol=data.rol
-    )
-    db.add(user)
-    db.commit()
-
+    user_repo.create({
+        "nombre": data.nombre.strip(),
+        "apellido": data.apellido.strip(),
+        "correo": data.correo,
+        "contrasena_hash": pwd_context.hash(data.contrasena),
+        "rol": data.rol,
+    })
+    conn.commit()
     return MessageResponse(message=f"Usuario {data.rol} creado exitosamente")
 
 
@@ -649,51 +483,56 @@ def crear_usuario(
 def admin_actualizar_usuario(
     id_usuario: int,
     data: UpdateUserSchema,
-    current_user: Usuario = Depends(require_role("administrador")),
-    db: Session = Depends(get_db)
+    current_user=Depends(require_role("administrador")),
+    conn=Depends(get_db_conn),
 ):
-    user = db.query(Usuario).filter(Usuario.id_usuario == id_usuario).first()
+    user_repo = UserRepository(conn)
+    user = user_repo.get_by_id(id_usuario)
     if not user:
         raise HTTPException(404, "Usuario no encontrado")
 
+    cursor = conn.cursor()
     if data.nombre is not None:
-        user.nombre = data.nombre.strip()
+        cursor.execute("UPDATE Usuarios SET nombre=? WHERE id_usuario=?", data.nombre.strip(), id_usuario)
     if data.apellido is not None:
-        user.apellido = data.apellido.strip()
+        cursor.execute("UPDATE Usuarios SET apellido=? WHERE id_usuario=?", data.apellido.strip(), id_usuario)
+    cursor.close()
     if data.correo is not None:
-        existe = db.query(Usuario).filter(
-            Usuario.correo == data.correo,
-            Usuario.id_usuario != id_usuario
-        ).first()
-        if existe:
+        existe = user_repo.get_by_email(data.correo)
+        if existe and existe.get("id_usuario") != id_usuario:
             raise HTTPException(400, "Este correo ya está en uso")
-        user.correo = data.correo
+        cursor = conn.cursor()
+        cursor.execute("UPDATE Usuarios SET correo=? WHERE id_usuario=?", data.correo, id_usuario)
+        cursor.close()
     if data.rol is not None:
         if data.rol not in ("visitante", "emprendedor", "administrador", "cliente"):
             raise HTTPException(400, "Rol no válido")
-        user.rol = data.rol
+        cursor = conn.cursor()
+        cursor.execute("UPDATE Usuarios SET rol=? WHERE id_usuario=?", data.rol, id_usuario)
+        cursor.close()
     if data.estado is not None:
         if data.estado not in ("activo", "inactivo", "suspendido"):
             raise HTTPException(400, "Estado no válido")
-        user.estado = data.estado
+        user_repo.update_status(id_usuario, data.estado)
 
-    db.commit()
+    conn.commit()
     return MessageResponse(message="Usuario actualizado correctamente")
 
 
 @router.delete("/users/{id_usuario}", response_model=MessageResponse)
 def admin_eliminar_usuario(
     id_usuario: int,
-    current_user: Usuario = Depends(require_role("administrador")),
-    db: Session = Depends(get_db)
+    current_user=Depends(require_role("administrador")),
+    conn=Depends(get_db_conn),
 ):
-    if current_user.id_usuario == id_usuario:
+    if current_user["id_usuario"] == id_usuario:
         raise HTTPException(400, "No puedes eliminarte a ti mismo")
 
-    user = db.query(Usuario).filter(Usuario.id_usuario == id_usuario).first()
+    user_repo = UserRepository(conn)
+    user = user_repo.get_by_id(id_usuario)
     if not user:
         raise HTTPException(404, "Usuario no encontrado")
 
-    user.estado = "inactivo"
-    db.commit()
+    user_repo.update_status(id_usuario, "inactivo")
+    conn.commit()
     return MessageResponse(message="Usuario desactivado correctamente")

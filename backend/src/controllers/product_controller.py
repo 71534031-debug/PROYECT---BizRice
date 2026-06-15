@@ -1,21 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import func, cast, String
 from pydantic import BaseModel
 from typing import Optional
 
-from src.config.db import get_db
-from src.models.product import Producto
-from src.models.business import Emprendimiento
+from src.config.db import get_db_conn
+from src.repositories.product_repository import ProductRepository
+from src.repositories.business_repository import BusinessRepository
 
 router = APIRouter()
 
-# ─── Schemas ───────────────────────────────────────────────────────────────
 
 class NegocioInfo(BaseModel):
     id_emprendimiento: int
     nombre: str
     distrito: Optional[str] = None
+
 
 class ProductoPublicResponse(BaseModel):
     id_producto: int
@@ -27,6 +25,7 @@ class ProductoPublicResponse(BaseModel):
     estado_stock: str
     negocio: Optional[NegocioInfo] = None
 
+
 class ProductoPublicListResponse(BaseModel):
     items: list[ProductoPublicResponse]
     total: int
@@ -34,7 +33,6 @@ class ProductoPublicListResponse(BaseModel):
     size: int
     pages: int
 
-# ─── Endpoints ─────────────────────────────────────────────────────────────
 
 @router.get("", response_model=ProductoPublicListResponse)
 def listar_productos(
@@ -44,83 +42,86 @@ def listar_productos(
     precio_min: Optional[float] = None,
     precio_max: Optional[float] = None,
     id_categoria: Optional[int] = None,
-    db: Session = Depends(get_db)
+    conn=Depends(get_db_conn),
 ):
-    query = db.query(Producto).options(
-        joinedload(Producto.emprendimiento)
-    ).filter(
-        Producto.activo == True,
-        Producto.estado_stock != "agotado"
-    ).join(
-        Emprendimiento,
-        (Emprendimiento.id_emprendimiento == Producto.id_emprendimiento) &
-        (Emprendimiento.estado_verificacion == "aprobado")
+    """
+    Listado público de productos — filtra por negocio aprobado y no agotados.
+    Como no hay un SP dedicado para este cruce, se obtienen negocios aprobados
+    y luego sus productos. Para una app real, crear sp_GetProductsPublic.
+    """
+    biz_repo = BusinessRepository(conn)
+    prod_repo = ProductRepository(conn)
+
+    businesses = biz_repo.get_all(
+        id_categoria=id_categoria, page=1, size=1000
     )
+    biz_ids = [b["id_emprendimiento"] for b in businesses["items"]]
 
-    if busqueda:
-        patron = f"%{busqueda}%"
-        query = query.filter(
-            Producto.nombre.ilike(patron) |
-            cast(Producto.descripcion, String).ilike(patron)
-        )
-    if precio_min is not None:
-        query = query.filter(Producto.precio >= precio_min)
-    if precio_max is not None:
-        query = query.filter(Producto.precio <= precio_max)
-    if id_categoria is not None:
-        query = query.filter(Emprendimiento.id_categoria == id_categoria)
-
-    total = query.count()
-    items = query.order_by(Producto.fecha_creacion.desc())\
-                 .offset((page - 1) * size).limit(size).all()
-
-    return ProductoPublicListResponse(
-        items=[
-            ProductoPublicResponse(
-                id_producto=p.id_producto,
-                nombre=p.nombre,
-                descripcion=p.descripcion,
-                precio=float(p.precio) if p.precio else None,
-                imagen_url=p.imagen_url,
-                estado_stock=p.estado_stock,
-                stock=p.stock or 0,
+    all_items = []
+    total = 0
+    for bid in biz_ids:
+        result = prod_repo.get_by_business(bid, page=1, size=1000)
+        for p in result["items"]:
+            if p.get("estado_stock") == "agotado":
+                continue
+            if busqueda and busqueda.lower() not in (p.get("nombre") or "").lower():
+                continue
+            if precio_min is not None and (p.get("precio") or 0) < precio_min:
+                continue
+            if precio_max is not None and (p.get("precio") or 0) > precio_max:
+                continue
+            biz = next((b for b in businesses["items"] if b["id_emprendimiento"] == bid), None)
+            all_items.append(ProductoPublicResponse(
+                id_producto=p["id_producto"],
+                nombre=p["nombre"],
+                descripcion=p.get("descripcion"),
+                precio=float(p["precio"]) if p.get("precio") else None,
+                imagen_url=p.get("imagen_url"),
+                stock=p.get("stock") or 0,
+                estado_stock=p["estado_stock"],
                 negocio=NegocioInfo(
-                    id_emprendimiento=p.emprendimiento.id_emprendimiento,
-                    nombre=p.emprendimiento.nombre,
-                    distrito=p.emprendimiento.distrito
-                ) if p.emprendimiento else None
-            )
-            for p in items
-        ],
+                    id_emprendimiento=biz["id_emprendimiento"] if biz else bid,
+                    nombre=biz["nombre"] if biz else "",
+                    distrito=biz.get("distrito") if biz else None,
+                ) if biz else None,
+            ))
+            total += 1
+
+    offset = (page - 1) * size
+    paged = all_items[offset:offset + size]
+    return ProductoPublicListResponse(
+        items=paged,
         total=total,
         page=page,
         size=size,
-        pages=(total + size - 1) // size if total > 0 else 0
+        pages=(total + size - 1) // size if total > 0 else 0,
     )
 
 
 @router.get("/{id_producto}", response_model=ProductoPublicResponse)
-def obtener_producto(id_producto: int, db: Session = Depends(get_db)):
-    prod = db.query(Producto).options(
-        joinedload(Producto.emprendimiento)
-    ).filter(
-        Producto.id_producto == id_producto,
-        Producto.activo == True
-    ).first()
+def obtener_producto(id_producto: int, conn=Depends(get_db_conn)):
+    """Obtiene un producto por ID buscando en todos los negocios aprobados."""
+    biz_repo = BusinessRepository(conn)
+    prod_repo = ProductRepository(conn)
 
-    if not prod:
-        raise HTTPException(404, "Producto no encontrado")
+    businesses = biz_repo.get_all(page=1, size=1000)
+    for b in businesses["items"]:
+        result = prod_repo.get_by_business(b["id_emprendimiento"], page=1, size=1000)
+        for p in result["items"]:
+            if p["id_producto"] == id_producto and p.get("activo", True):
+                return ProductoPublicResponse(
+                    id_producto=p["id_producto"],
+                    nombre=p["nombre"],
+                    descripcion=p.get("descripcion"),
+                    precio=float(p["precio"]) if p.get("precio") else None,
+                    imagen_url=p.get("imagen_url"),
+                    estado_stock=p["estado_stock"],
+                    stock=p.get("stock") or 0,
+                    negocio=NegocioInfo(
+                        id_emprendimiento=b["id_emprendimiento"],
+                        nombre=b["nombre"],
+                        distrito=b.get("distrito"),
+                    ),
+                )
 
-    return ProductoPublicResponse(
-        id_producto=prod.id_producto,
-        nombre=prod.nombre,
-        descripcion=prod.descripcion,
-        precio=float(prod.precio) if prod.precio else None,
-        imagen_url=prod.imagen_url,
-        estado_stock=prod.estado_stock,
-        negocio=NegocioInfo(
-            id_emprendimiento=prod.emprendimiento.id_emprendimiento,
-            nombre=prod.emprendimiento.nombre,
-            distrito=prod.emprendimiento.distrito
-        ) if prod.emprendimiento else None
-    )
+    raise HTTPException(404, "Producto no encontrado")

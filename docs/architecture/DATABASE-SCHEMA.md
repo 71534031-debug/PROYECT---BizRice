@@ -2,7 +2,7 @@
 
 ## Motor: SQL Server 2019+
 ## Driver Python: pyodbc
-## ORM: SQLAlchemy (mssql+pyodbc)
+## ORM: SQLAlchemy (solo para crear tablas al inicio — NUNCA para queries)
 
 ---
 
@@ -24,7 +24,7 @@ CREATE TABLE Usuarios (
     correo            VARCHAR(150)  NOT NULL UNIQUE,
     contrasena_hash   VARCHAR(255)  NOT NULL,
     rol               VARCHAR(20)   NOT NULL DEFAULT 'emprendedor'
-                      CHECK (rol IN ('visitante','emprendedor','administrador')),
+                      CHECK (rol IN ('visitante','emprendedor','administrador','cliente')),
     estado            VARCHAR(20)   NOT NULL DEFAULT 'activo'
                       CHECK (estado IN ('activo','inactivo','suspendido')),
     avatar_url        VARCHAR(255)  NULL,
@@ -59,7 +59,7 @@ CREATE TABLE Emprendimientos (
     CONSTRAINT FK_Emp_Categoria FOREIGN KEY (id_categoria) REFERENCES Categorias(id_categoria)
 );
 
--- 4. Productos
+-- 4. Productos (con soft delete vía activo)
 CREATE TABLE Productos (
     id_producto          INT             IDENTITY(1,1) PRIMARY KEY,
     id_emprendimiento    INT             NOT NULL,
@@ -67,14 +67,15 @@ CREATE TABLE Productos (
     descripcion          TEXT            NULL,
     precio               DECIMAL(10,2)   NULL,
     imagen_url           VARCHAR(255)    NULL,
+    stock                INT             NOT NULL DEFAULT 0,
     estado_stock         VARCHAR(20)     NOT NULL DEFAULT 'disponible'
                          CHECK (estado_stock IN ('disponible','bajo_stock','agotado')),
-    activo               BIT             NOT NULL DEFAULT 1,
+    activo               BIT             NOT NULL DEFAULT 1,  -- soft delete
     fecha_creacion       DATETIME        NOT NULL DEFAULT GETDATE(),
     CONSTRAINT FK_Prod_Emp FOREIGN KEY (id_emprendimiento) REFERENCES Emprendimientos(id_emprendimiento)
 );
 
--- 5. Comentarios
+-- 5. Comentarios (reseñas con contenido)
 CREATE TABLE Comentarios (
     id_comentario        INT       IDENTITY(1,1) PRIMARY KEY,
     id_usuario           INT       NOT NULL,
@@ -86,7 +87,7 @@ CREATE TABLE Comentarios (
     CONSTRAINT FK_Com_Emp     FOREIGN KEY (id_emprendimiento) REFERENCES Emprendimientos(id_emprendimiento)
 );
 
--- 6. Valoraciones
+-- 6. Valoraciones (puntuación 1-5, único par usuario+emprendimiento)
 CREATE TABLE Valoraciones (
     id_valoracion        INT       IDENTITY(1,1) PRIMARY KEY,
     id_usuario           INT       NOT NULL,
@@ -141,7 +142,6 @@ INSERT INTO Categorias (nombre, descripcion) VALUES
 ('Tecnología',              'Soluciones digitales y desarrollo');
 
 -- Administrador inicial (contraseña: Admin123! — cambiar en producción)
--- Hash generado con bcrypt del password Admin123!
 INSERT INTO Usuarios (nombre, apellido, correo, contrasena_hash, rol) VALUES
 ('Admin', 'BizRise', 'admin@bizrise.pe',
  '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMqJqhg3GPXV1jBKZPMbfMq.oK',
@@ -151,287 +151,210 @@ GO
 
 ---
 
-## backend/src/config/db.py
+## Stored Procedures
+
+Todas las operaciones CRUD pasan exclusivamente por Stored Procedures.
+Los SPs se definen con `CREATE OR ALTER` en `backend/src/database/stored_procedures.sql`.
+
+### Usuarios
+
+| SP | Parámetros | Descripción |
+|---|---|---|
+| `sp_GetUserByEmail` | `@correo` | Obtener usuario por correo (login) |
+| `sp_GetUserById` | `@id_usuario` | Obtener usuario por ID |
+| `sp_RegisterUser` | `@nombre, @apellido, @correo, @contrasena_hash, @rol` | Registrar nuevo usuario |
+| `sp_UpdateUserStatus` | `@id_usuario, @estado` | Activar/suspender/desactivar usuario |
+| `sp_ChangePassword` | `@id_usuario, @contrasena_hash_nueva` | Cambiar contraseña |
+| `sp_GetAllUsers` | `@page, @size, @rol, @estado` | Listar usuarios (paginado) |
+
+### Categorías
+
+| SP | Parámetros | Descripción |
+|---|---|---|
+| `sp_GetCategories` | — | Listar todas las categorías |
+| `sp_GetCategoryById` | `@id_categoria` | Obtener categoría por ID |
+
+### Emprendimientos
+
+| SP | Parámetros | Descripción |
+|---|---|---|
+| `sp_GetBusinesses` | `@busqueda, @id_categoria, @distrito, @orden, @page, @size` | Listar negocios aprobados (directorio público, paginado) |
+| `sp_GetBusinessById` | `@id_emprendimiento` | Obtener detalle completo + redes + promos activas |
+| `sp_GetBusinessByUserId` | `@id_usuario` | Obtener negocio del usuario actual + redes |
+| `sp_CreateBusiness` | `@id_usuario, @id_categoria, @nombre, @descripcion, @telefono, @direccion, @distrito` | Registrar nuevo emprendimiento |
+| `sp_UpdateBusiness` | `@id_emprendimiento, @id_usuario, @nombre, @id_categoria, @descripcion, @telefono, @direccion, @distrito, @horario_apertura, @horario_cierre` | Actualizar datos del negocio |
+| `sp_UpdateBusinessImage` | `@id_emprendimiento, @imagen_portada_url` | Actualizar imagen de portada |
+| `sp_UpdateBusinessStatus` | `@id_emprendimiento, @estado, @motivo` | Aprobar/rechazar negocio (admin) |
+| `sp_GetAllBusinessesAdmin` | `@page, @size, @busqueda, @estado, @id_categoria` | Listar todos los negocios (admin, paginado) |
+| `sp_CountBusinesses` | — | Contar total de negocios aprobados |
+| `sp_CountPendingBusinesses` | — | Contar negocios pendientes de revisión |
+
+### Productos
+
+| SP | Parámetros | Descripción |
+|---|---|---|
+| `sp_GetProductsByBusiness` | `@id_emprendimiento, @page, @size, @busqueda` | Listar productos de un negocio (paginado) |
+| `sp_GetProductById` | `@id_producto` | Obtener producto por ID |
+| `sp_CreateProduct` | `@id_emprendimiento, @nombre, @descripcion, @precio, @imagen_url, @stock, @estado_stock` | Crear producto (máx. 50 activos) |
+| `sp_UpdateProduct` | `@id_producto, @id_emprendimiento, @nombre, @descripcion, @precio, @imagen_url, @stock, @estado_stock` | Actualizar producto |
+| `sp_DeleteProduct` | `@id_producto, @id_emprendimiento` | Soft delete (activo = 0) |
+| `sp_CountProductsByBusiness` | `@id_emprendimiento` | Contar productos activos |
+
+### Reseñas y Valoraciones
+
+| SP | Parámetros | Descripción |
+|---|---|---|
+| `sp_GetReviewsByBusiness` | `@id_emprendimiento, @page, @size` | Listar reseñas de un negocio (paginado) |
+| `sp_CreateReview` | `@id_usuario, @id_emprendimiento, @contenido` | Crear comentario/reseña |
+| `sp_GetRatingDistribution` | `@id_emprendimiento` | Distribución de estrellas (1-5) + promedio |
+| `sp_UserAlreadyReviewed` | `@id_usuario, @id_emprendimiento` | Verificar si el usuario ya valoró |
+
+### Promociones
+
+| SP | Parámetros | Descripción |
+|---|---|---|
+| `sp_GetPromotionsByBusiness` | `@id_emprendimiento` | Listar promociones de un negocio |
+| `sp_GetPromotionById` | `@id_promocion` | Obtener promoción por ID |
+| `sp_CreatePromotion` | `@id_emprendimiento, @titulo, @descripcion, @fecha_inicio, @fecha_fin` | Crear promoción (máx. 10 activas) |
+| `sp_UpdatePromotion` | `@id_promocion, @id_emprendimiento, @titulo, @descripcion, @fecha_inicio, @fecha_fin` | Actualizar promoción |
+| `sp_DeletePromotion` | `@id_promocion, @id_emprendimiento` | Eliminar promoción |
+| `sp_AutoExpirePromotions` | — | Marcar como vencidas las promociones con fecha_fin < hoy |
+
+### Admin / Estadísticas
+
+| SP | Parámetros | Descripción |
+|---|---|---|
+| `sp_GetAdminStats` | — | Estadísticas del panel admin (totales) |
+
+> **Nota**: Cada SP se implementa con `CREATE OR ALTER PROCEDURE`. Todos los SPs retornan `SET NOCOUNT ON;` y usan `RAISERROR` para errores de validación.
+
+---
+
+## backend/src/config/db.py (conexión actual)
 
 ```python
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, DeclarativeBase
+import pyodbc
 from src.config.settings import settings
 
-class Base(DeclarativeBase):
-    pass
-
-engine = create_engine(
-    settings.DATABASE_URL,
-    echo=settings.DEBUG,
-    pool_pre_ping=True,
-    pool_size=5,
-    max_overflow=10
-)
-
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
 def get_db():
-    """Dependency FastAPI — inyecta sesión de BD en cada request"""
-    db = SessionLocal()
+    """Retorna una conexión pyodbc DIRECTA, NO una SQLAlchemy Session.
+
+    Los repositories reciben esta conexión y ejecutan los SPs
+    con cursor.execute("EXEC sp_name @param1=?, @param2=?", values).
+    """
+    conn = pyodbc.connect(
+        f"DRIVER={{{settings.DB_DRIVER}}};"
+        f"SERVER={settings.DB_SERVER};"
+        f"DATABASE={settings.DB_NAME};"
+        f"UID={settings.DB_USER};"
+        f"PWD={settings.DB_PASSWORD};"
+        "TrustServerCertificate=yes;"
+    )
     try:
-        yield db
+        yield conn
     finally:
-        db.close()
+        conn.close()
 ```
 
----
-
-## backend/src/config/settings.py
+La función `get_db()` se usa como dependencia de FastAPI en todos los controllers:
 
 ```python
-from pydantic_settings import BaseSettings
-from typing import List
+from fastapi import Depends
+from src.config.db import get_db
 
-class Settings(BaseSettings):
-    # SQL Server
-    DB_SERVER:   str
-    DB_NAME:     str = "BizRiseDB"
-    DB_USER:     str
-    DB_PASSWORD: str
-    DB_DRIVER:   str = "ODBC+Driver+17+for+SQL+Server"
-
-    # JWT
-    SECRET_KEY:                  str
-    ALGORITHM:                   str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-    REFRESH_TOKEN_EXPIRE_DAYS:   int = 7
-
-    # App
-    APP_NAME:        str  = "BizRise API"
-    DEBUG:           bool = False
-    ALLOWED_ORIGINS: str  = "http://localhost:4200,http://127.0.0.1:5500"
-
-    # Uploads
-    UPLOAD_DIR:       str = "uploads"
-    MAX_FILE_SIZE_MB: int = 2
-
-    @property
-    def DATABASE_URL(self) -> str:
-        driver = self.DB_DRIVER.replace(" ", "+")
-        return (
-            f"mssql+pyodbc://{self.DB_USER}:{self.DB_PASSWORD}"
-            f"@{self.DB_SERVER}/{self.DB_NAME}?driver={driver}"
-        )
-
-    @property
-    def ORIGINS_LIST(self) -> List[str]:
-        return [o.strip() for o in self.ALLOWED_ORIGINS.split(",")]
-
-    class Config:
-        env_file = ".env"
-
-settings = Settings()
-```
-
----
-
-## backend/.env.example
-
-```env
-# SQL Server — completar con tus datos
-DB_SERVER=localhost
-DB_NAME=BizRiseDB
-DB_USER=sa
-DB_PASSWORD=TuPassword123!
-DB_DRIVER=ODBC Driver 17 for SQL Server
-
-# JWT — cambiar por una clave segura larga
-SECRET_KEY=bizrise_clave_secreta_muy_larga_cambiar_en_produccion_2026
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-REFRESH_TOKEN_EXPIRE_DAYS=7
-
-# App
-APP_NAME=BizRise API
-DEBUG=True
-ALLOWED_ORIGINS=http://localhost:5500,http://127.0.0.1:5500
-
-# Uploads
-UPLOAD_DIR=uploads
-MAX_FILE_SIZE_MB=2
-```
-
----
-
-## backend/requirements.txt
-
-```
-fastapi==0.110.0
-uvicorn[standard]==0.27.1
-sqlalchemy==2.0.28
-pyodbc==5.0.1
-pydantic==2.6.3
-pydantic-settings==2.2.1
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
-python-dotenv==1.0.1
-python-multipart==0.0.9
+@router.get("/businesses")
+def listar_negocios(conn=Depends(get_db)):
+    repo = BusinessRepository(conn)
+    return repo.get_all(...)
 ```
 
 ---
 
 ## Modelos SQLAlchemy (backend/src/models/)
 
-### user.py
-```python
-from sqlalchemy import Column, Integer, String, DateTime, func
-from src.config.db import Base
+Los modelos SQLAlchemy existen únicamente para crear las tablas automáticamente al iniciar la aplicación:
 
-class Usuario(Base):
-    __tablename__ = "Usuarios"
-    id_usuario      = Column(Integer, primary_key=True, index=True)
-    nombre          = Column(String(100), nullable=False)
-    apellido        = Column(String(100), nullable=False)
-    correo          = Column(String(150), unique=True, nullable=False, index=True)
-    contrasena_hash = Column(String(255), nullable=False)
-    rol             = Column(String(20),  nullable=False, default="emprendedor")
-    estado          = Column(String(20),  nullable=False, default="activo")
-    avatar_url      = Column(String(255), nullable=True)
-    fecha_registro  = Column(DateTime, server_default=func.getdate())
+```python
+# En main.py o durante startup:
+from src.models import user, category, business, product, review, rating, promotion, social_network
+from src.config.db import engine, Base
+
+Base.metadata.create_all(bind=engine)
 ```
 
-### category.py
-```python
-from sqlalchemy import Column, Integer, String
-from src.config.db import Base
+**NO se usan para hacer queries en los controllers.** Todas las operaciones de datos pasan por Stored Procedures a través de los repositorios.
 
-class Categoria(Base):
-    __tablename__ = "Categorias"
-    id_categoria = Column(Integer, primary_key=True, index=True)
-    nombre       = Column(String(100), nullable=False)
-    descripcion  = Column(String(255), nullable=True)
-    icono_url    = Column(String(255), nullable=True)
+### Lista de modelos
+
+| Archivo | Clase | Tabla |
+|---|---|---|
+| `user.py` | `Usuario` | Usuarios |
+| `category.py` | `Categoria` | Categorias |
+| `business.py` | `Emprendimiento` | Emprendimientos |
+| `product.py` | `Producto` | Productos |
+| `review.py` | `Comentario` | Comentarios |
+| `rating.py` | `Valoracion` | Valoraciones |
+| `promotion.py` | `Promocion` | Promociones |
+| `social_network.py` | `RedSocial` | RedesSociales |
+
+---
+
+## Repository pattern (backend/src/repositories/)
+
+Cada repositorio hereda de `BaseRepository` que provee tres métodos:
+
+| Método | Descripción |
+|---|---|
+| `execute_sp(sp_name, params)` | Ejecuta SP y retorna lista de dicts (primer resultset) |
+| `execute_sp_multi(sp_name, params)` | Ejecuta SP y retorna TODOS los resultsets como listas de dicts |
+| `execute_sp_single(sp_name, params)` | Ejecuta SP y retorna la primera fila del primer resultset, o None |
+
+### Ejemplo de repositorio
+
+```python
+# product_repository.py
+from src.repositories.base_repository import BaseRepository
+
+class ProductRepository(BaseRepository):
+
+    def get_by_business(self, id_emprendimiento, page=1, size=20, busqueda=None):
+        rows = self.execute_sp("sp_GetProductsByBusiness", {
+            "id_emprendimiento": id_emprendimiento,
+            "page": page,
+            "size": size,
+            "busqueda": busqueda,
+        })
+        if not rows:
+            return {"items": [], "total": 0, "page": page, "size": size, "pages": 0}
+        meta = rows[0]
+        return {
+            "items": rows,
+            "total": meta.get("total", 0),
+            "page": meta.get("page", page),
+            "size": meta.get("size", size),
+            "pages": meta.get("pages", 0),
+        }
+
+    def create(self, id_emprendimiento, data):
+        return self.execute_sp_single("sp_CreateProduct", {
+            "id_emprendimiento": id_emprendimiento,
+            "nombre": data.get("nombre"),
+            "descripcion": data.get("descripcion"),
+            "precio": data.get("precio"),
+            "imagen_url": data.get("imagen_url"),
+            "stock": data.get("stock", 0),
+            "estado_stock": data.get("estado_stock", "disponible"),
+        })
 ```
 
-### business.py
-```python
-from sqlalchemy import Column, Integer, String, Text, DateTime, Time, ForeignKey, func
-from sqlalchemy.orm import relationship
-from src.config.db import Base
+---
 
-class Emprendimiento(Base):
-    __tablename__ = "Emprendimientos"
-    id_emprendimiento   = Column(Integer, primary_key=True, index=True)
-    id_usuario          = Column(Integer, ForeignKey("Usuarios.id_usuario"),    nullable=False)
-    id_categoria        = Column(Integer, ForeignKey("Categorias.id_categoria"), nullable=False)
-    nombre              = Column(String(150), nullable=False)
-    descripcion         = Column(Text,        nullable=True)
-    telefono            = Column(String(20),  nullable=True)
-    direccion           = Column(String(255), nullable=True)
-    distrito            = Column(String(100), nullable=True)
-    horario_apertura    = Column(Time,        nullable=True)
-    horario_cierre      = Column(Time,        nullable=True)
-    imagen_portada_url  = Column(String(255), nullable=True)
-    estado_verificacion = Column(String(20),  nullable=False, default="pendiente")
-    fecha_registro      = Column(DateTime, server_default=func.getdate())
+## Reglas de base de datos (resumen)
 
-    propietario    = relationship("Usuario",    foreign_keys=[id_usuario])
-    categoria      = relationship("Categoria",  foreign_keys=[id_categoria])
-    productos      = relationship("Producto",   back_populates="emprendimiento")
-    comentarios    = relationship("Comentario", back_populates="emprendimiento")
-    valoraciones   = relationship("Valoracion", back_populates="emprendimiento")
-    promociones    = relationship("Promocion",  back_populates="emprendimiento")
-    redes_sociales = relationship("RedSocial",  back_populates="emprendimiento")
-```
-
-### product.py
-```python
-from sqlalchemy import Column, Integer, String, Text, Numeric, DateTime, ForeignKey, Boolean, func
-from sqlalchemy.orm import relationship
-from src.config.db import Base
-
-class Producto(Base):
-    __tablename__ = "Productos"
-    id_producto       = Column(Integer, primary_key=True, index=True)
-    id_emprendimiento = Column(Integer, ForeignKey("Emprendimientos.id_emprendimiento"), nullable=False)
-    nombre            = Column(String(150), nullable=False)
-    descripcion       = Column(Text,        nullable=True)
-    precio            = Column(Numeric(10,2), nullable=True)
-    imagen_url        = Column(String(255), nullable=True)
-    estado_stock      = Column(String(20),  nullable=False, default="disponible")
-    activo            = Column(Boolean,     nullable=False, default=True)
-    fecha_creacion    = Column(DateTime, server_default=func.getdate())
-
-    emprendimiento = relationship("Emprendimiento", back_populates="productos")
-```
-
-### review.py
-```python
-from sqlalchemy import Column, Integer, Text, DateTime, ForeignKey, func
-from sqlalchemy.orm import relationship
-from src.config.db import Base
-
-class Comentario(Base):
-    __tablename__ = "Comentarios"
-    id_comentario     = Column(Integer, primary_key=True, index=True)
-    id_usuario        = Column(Integer, ForeignKey("Usuarios.id_usuario"),              nullable=False)
-    id_emprendimiento = Column(Integer, ForeignKey("Emprendimientos.id_emprendimiento"), nullable=False)
-    contenido         = Column(Text,    nullable=False)
-    util_count        = Column(Integer, nullable=False, default=0)
-    fecha             = Column(DateTime, server_default=func.getdate())
-
-    usuario        = relationship("Usuario",         foreign_keys=[id_usuario])
-    emprendimiento = relationship("Emprendimiento",  back_populates="comentarios")
-```
-
-### rating.py
-```python
-from sqlalchemy import Column, Integer, SmallInteger, DateTime, ForeignKey, func, UniqueConstraint
-from sqlalchemy.orm import relationship
-from src.config.db import Base
-
-class Valoracion(Base):
-    __tablename__ = "Valoraciones"
-    __table_args__ = (
-        UniqueConstraint("id_usuario", "id_emprendimiento", name="UQ_Val_Usuario_Emp"),
-    )
-    id_valoracion     = Column(Integer,      primary_key=True, index=True)
-    id_usuario        = Column(Integer,      ForeignKey("Usuarios.id_usuario"),              nullable=False)
-    id_emprendimiento = Column(Integer,      ForeignKey("Emprendimientos.id_emprendimiento"), nullable=False)
-    puntuacion        = Column(SmallInteger, nullable=False)
-    fecha             = Column(DateTime,     server_default=func.getdate())
-
-    usuario        = relationship("Usuario")
-    emprendimiento = relationship("Emprendimiento", back_populates="valoraciones")
-```
-
-### promotion.py
-```python
-from sqlalchemy import Column, Integer, String, Text, Date, ForeignKey
-from sqlalchemy.orm import relationship
-from src.config.db import Base
-
-class Promocion(Base):
-    __tablename__ = "Promociones"
-    id_promocion      = Column(Integer,      primary_key=True, index=True)
-    id_emprendimiento = Column(Integer,      ForeignKey("Emprendimientos.id_emprendimiento"), nullable=False)
-    titulo            = Column(String(150),  nullable=False)
-    descripcion       = Column(Text,         nullable=True)
-    fecha_inicio      = Column(Date,         nullable=True)
-    fecha_fin         = Column(Date,         nullable=True)
-    estado            = Column(String(20),   nullable=False, default="activa")
-
-    emprendimiento = relationship("Emprendimiento", back_populates="promociones")
-```
-
-### social_network.py
-```python
-from sqlalchemy import Column, Integer, String, ForeignKey
-from sqlalchemy.orm import relationship
-from src.config.db import Base
-
-class RedSocial(Base):
-    __tablename__ = "RedesSociales"
-    id_red            = Column(Integer,     primary_key=True, index=True)
-    id_emprendimiento = Column(Integer,     ForeignKey("Emprendimientos.id_emprendimiento"), nullable=False)
-    plataforma        = Column(String(30),  nullable=False)
-    url               = Column(String(255), nullable=False)
-
-    emprendimiento = relationship("Emprendimiento", back_populates="redes_sociales")
-```
+1. **TODAS las operaciones CRUD pasan por Stored Procedures** — NUNCA SQL inline en Python.
+2. **Los repositorios usan `execute_sp("sp_name", {params})`** que construye `EXEC sp_name @param1=?, @param2=?` con pyodbc.
+3. **Los modelos SQLAlchemy solo existen para `Base.metadata.create_all()`** — NUNCA para queries.
+4. **`get_db()` retorna una conexión pyodbc directa**, NO una SQLAlchemy Session.
+5. **Soft delete** en Productos vía columna `activo BIT NOT NULL DEFAULT 1`.
+6. **Promociones** se auto-expiran vía `sp_AutoExpirePromotions`.
+7. **Cada usuario solo puede valorar una vez** cada emprendimiento (`UNIQUE(id_usuario, id_emprendimiento)`).
