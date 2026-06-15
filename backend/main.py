@@ -7,7 +7,7 @@ from src.config.settings import settings
 from src.config.db import engine, Base
 
 # Importar todos los modelos para que SQLAlchemy los registre
-from src.models import user, business, category, product, review, rating, promotion, social_network
+from src.models import user, business, category, product, review, rating, promotion, social_network, sale
 
 # Importar controllers (routers)
 from src.controllers import (
@@ -15,7 +15,10 @@ from src.controllers import (
     business_controller,
     category_controller,
     entrepreneur_controller,
-    admin_controller
+    admin_controller,
+    sale_controller,
+    product_controller,
+    users_controller
 )
 
 app = FastAPI(
@@ -42,8 +45,11 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 app.include_router(auth_controller.router,         prefix="/api/v1/auth",         tags=["Autenticación"])
 app.include_router(category_controller.router,     prefix="/api/v1/categories",   tags=["Categorías"])
 app.include_router(business_controller.router,     prefix="/api/v1/businesses",   tags=["Emprendimientos"])
+app.include_router(product_controller.router,      prefix="/api/v1/products",     tags=["Productos"])
 app.include_router(entrepreneur_controller.router, prefix="/api/v1/entrepreneur", tags=["Panel Emprendedor"])
 app.include_router(admin_controller.router,        prefix="/api/v1/admin",        tags=["Panel Administrador"])
+app.include_router(sale_controller.router,         prefix="/api/v1/sales",        tags=["Ventas"])
+app.include_router(users_controller.router,        prefix="/api/v1/users",        tags=["Usuarios"])
 
 @app.on_event("startup")
 def startup():

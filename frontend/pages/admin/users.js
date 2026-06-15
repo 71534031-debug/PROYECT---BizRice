@@ -27,6 +27,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       abrirSuspender(id, name);
     } else if (btn.dataset.action === 'activate') {
       abrirActivar(id, name);
+    } else if (btn.dataset.action === 'edit') {
+      abrirEditarUsuario(id);
+    } else if (btn.dataset.action === 'delete') {
+      abrirEliminarUsuario(id, name);
     }
   });
 
@@ -45,6 +49,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   document.getElementById('btn-guardar-nuevo-usuario').addEventListener('click', crearNuevoUsuario);
+  document.getElementById('btn-guardar-editar-usuario').addEventListener('click', guardarEditarUsuario);
+  document.getElementById('btn-confirmar-eliminar-usuario').addEventListener('click', eliminarUsuario);
   document.getElementById('btn-exportar-users').addEventListener('click', exportarUsuariosCSV);
   document.getElementById('btn-filtros-users').addEventListener('click', () => {
     document.getElementById('search-input').focus();
@@ -128,12 +134,15 @@ function renderTable(lista) {
     const isMe = currentUser && currentUser.id_usuario === u.id_usuario;
 
     let actions = '';
+    const editBtn = '<button class="btn btn-outline-primary btn-sm" data-action="edit" data-id="' + u.id_usuario + '" title="Editar"><i class="bi bi-pencil"></i></button>';
     if (!isMe && u.rol !== 'administrador') {
-      if (u.estado === 'activo') {
-        actions = '<button class="btn btn-outline-danger btn-sm" data-action="suspend" data-id="' + u.id_usuario + '" data-name="' + safeName + '" title="Suspender"><i class="bi bi-pause-circle"></i></button>';
-      } else {
-        actions = '<button class="btn btn-outline-success btn-sm" data-action="activate" data-id="' + u.id_usuario + '" data-name="' + safeName + '" title="Activar"><i class="bi bi-play-circle"></i></button>';
-      }
+      const stateBtn = u.estado === 'activo'
+        ? '<button class="btn btn-outline-danger btn-sm" data-action="suspend" data-id="' + u.id_usuario + '" data-name="' + safeName + '" title="Suspender"><i class="bi bi-pause-circle"></i></button>'
+        : '<button class="btn btn-outline-success btn-sm" data-action="activate" data-id="' + u.id_usuario + '" data-name="' + safeName + '" title="Activar"><i class="bi bi-play-circle"></i></button>';
+      const deleteBtn = '<button class="btn btn-outline-danger btn-sm" data-action="delete" data-id="' + u.id_usuario + '" data-name="' + safeName + '" title="Eliminar"><i class="bi bi-trash"></i></button>';
+      actions = editBtn + stateBtn + deleteBtn;
+    } else if (isMe) {
+      actions = editBtn;
     } else {
       actions = '<span class="text-muted small">&mdash;</span>';
     }
@@ -280,6 +289,79 @@ async function exportarUsuariosCSV() {
     showToast('Reporte exportado exitosamente', 'success');
   } catch (e) {
     showToast('Error al exportar: ' + e.message, 'danger');
+  }
+}
+
+async function abrirEditarUsuario(id) {
+  try {
+    const data = await apiGet('/admin/users?size=1');
+    const user = (data.items || []).find(u => u.id_usuario === id);
+    if (!user) {
+      showToast('Usuario no encontrado', 'danger');
+      return;
+    }
+    document.getElementById('eu-id').value = user.id_usuario;
+    document.getElementById('eu-nombre').value = user.nombre || '';
+    document.getElementById('eu-apellido').value = user.apellido || '';
+    document.getElementById('eu-correo').value = user.correo || '';
+    document.getElementById('eu-rol').value = user.rol || 'cliente';
+    document.getElementById('eu-estado').value = user.estado || 'activo';
+    document.getElementById('form-editar-usuario').classList.remove('was-validated');
+    new bootstrap.Modal('#modal-editar-usuario').show();
+  } catch (e) {
+    showToast('Error al cargar usuario', 'danger');
+  }
+}
+
+async function guardarEditarUsuario() {
+  const form = document.getElementById('form-editar-usuario');
+  if (!form.checkValidity()) {
+    form.classList.add('was-validated');
+    return;
+  }
+
+  const id = document.getElementById('eu-id').value;
+  const data = {
+    nombre: document.getElementById('eu-nombre').value.trim(),
+    apellido: document.getElementById('eu-apellido').value.trim(),
+    correo: document.getElementById('eu-correo').value.trim(),
+    rol: document.getElementById('eu-rol').value,
+    estado: document.getElementById('eu-estado').value
+  };
+
+  const btn = document.getElementById('btn-guardar-editar-usuario');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Guardando...';
+
+  try {
+    await apiPut('/admin/users/' + id, data);
+    showToast('Usuario actualizado exitosamente', 'success');
+    bootstrap.Modal.getInstance(document.getElementById('modal-editar-usuario')).hide();
+    await cargarUsuarios();
+  } catch (e) {
+    showToast(e.message || 'Error al actualizar usuario', 'danger');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Guardar Cambios';
+  }
+}
+
+function abrirEliminarUsuario(id, nombre) {
+  document.getElementById('eliminar-usuario-id').value = id;
+  document.getElementById('modal-eliminar-title').textContent = 'Eliminar usuario';
+  document.getElementById('modal-eliminar-msg').textContent = 'Esta accion no se puede deshacer. Se eliminara permanentemente a ' + nombre + '.';
+  new bootstrap.Modal('#modal-eliminar-usuario').show();
+}
+
+async function eliminarUsuario() {
+  const id = document.getElementById('eliminar-usuario-id').value;
+  try {
+    await apiDelete('/admin/users/' + id);
+    showToast('Usuario eliminado permanentemente', 'success');
+    bootstrap.Modal.getInstance(document.getElementById('modal-eliminar-usuario')).hide();
+    await cargarUsuarios();
+  } catch (e) {
+    showToast(e.message || 'Error al eliminar usuario', 'danger');
   }
 }
 

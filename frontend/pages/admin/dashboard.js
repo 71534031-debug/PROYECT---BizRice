@@ -35,7 +35,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function cargarStats() {
   try {
-    const stats = await apiGet('/admin/stats');
+    const [stats, metrics] = await Promise.all([
+      apiGet('/admin/stats'),
+      apiGet('/admin/dashboard/metrics')
+    ]);
 
     document.getElementById('total-negocios').textContent = stats.total_negocios ?? 0;
     document.getElementById('total-pendientes').textContent = stats.pendientes ?? 0;
@@ -52,9 +55,38 @@ async function cargarStats() {
     if (stats.crecimiento_mensual && stats.crecimiento_mensual.length > 0) {
       renderChart(stats.crecimiento_mensual);
     }
+
+    document.getElementById('total-usuarios').textContent = metrics.total_usuarios ?? 0;
+    document.getElementById('total-productos').textContent = metrics.total_productos ?? 0;
+    document.getElementById('total-ventas').textContent = metrics.ventas_entregadas ?? 0;
+    document.getElementById('ingresos-totales').textContent = formatPrice(metrics.ingresos_totales || 0) + ' ingresos';
+
+    if (metrics.productos_mas_vendidos && metrics.productos_mas_vendidos.length > 0) {
+      renderTopProductos(metrics.productos_mas_vendidos);
+    }
   } catch (e) {
     showToast('Error al cargar estadísticas', 'danger');
   }
+}
+
+function renderTopProductos(items) {
+  const container = document.getElementById('top-productos-body');
+  container.innerHTML = '<div class="list-group list-group-flush">' +
+    items.map((p, i) => {
+      const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1);
+      return '<div class="list-group-item px-4 py-3 d-flex align-items-center gap-3 border-0 border-bottom">' +
+        '<span class="fw-bold text-muted" style="width:24px">' + medal + '</span>' +
+        '<div class="flex-grow-1">' +
+          '<div class="fw-semibold small">' + p.nombre + '</div>' +
+          '<small class="text-muted">' + p.negocio + '</small>' +
+        '</div>' +
+        '<div class="text-end">' +
+          '<div class="fw-bold small" style="color:var(--bizrise-primary)">' + p.total_vendido + ' vend.</div>' +
+          '<small class="text-muted">' + formatPrice(p.ingresos) + '</small>' +
+        '</div>' +
+      '</div>';
+    }).join('') +
+    '</div>';
 }
 
 function renderPendientes(lista) {

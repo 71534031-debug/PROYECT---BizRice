@@ -145,9 +145,11 @@ async function cargarProductos() {
 
     grid.innerHTML = '';
     data.items.forEach(p => {
-      const stockClass = `badge-${p.estado_stock}`;
-      const stockLabel = p.estado_stock === 'disponible' ? 'Disponible'
-                       : p.estado_stock === 'bajo_stock' ? 'Bajo stock'
+      const stockNum = p.stock || 0;
+      const estStock = stockNum > 10 ? 'disponible' : stockNum > 0 ? 'bajo_stock' : 'agotado';
+      const stockClass = `badge-${estStock}`;
+      const stockLabel = estStock === 'disponible' ? 'Disponible'
+                       : estStock === 'bajo_stock' ? 'Bajo stock'
                        : 'Agotado';
       const col = document.createElement('div');
       col.className = 'col-6 col-md-4';
@@ -159,7 +161,10 @@ async function cargarProductos() {
             <span class="badge ${stockClass} mb-1">${stockLabel}</span>
             <h6 class="card-title mb-1">${p.nombre}</h6>
             <p class="card-text text-muted small mb-1">${truncate(p.descripcion, 60)}</p>
-            <div class="precio">${formatPrice(p.precio)}</div>
+            <div class="d-flex align-items-center justify-content-between">
+              <div class="precio">${formatPrice(p.precio)}</div>
+              <small class="text-muted"><i class="bi bi-box"></i> ${stockNum} uds.</small>
+            </div>
           </div>
         </div>
       `;

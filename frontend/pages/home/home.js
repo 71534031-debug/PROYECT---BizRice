@@ -34,9 +34,11 @@ async function cargarCategorias() {
       const card = document.createElement('div');
       card.className = 'category-card';
       card.dataset.id = cat.id_categoria;
+      const count = cat.total_negocios || cat.business_count || 0;
       card.innerHTML = `
         <i class="bi ${icono}"></i>
         <span>${cat.nombre}</span>
+        ${count > 0 ? `<small class="text-muted mt-1">${count} negocios</small>` : ''}
       `;
       card.addEventListener('click', () => irADirectorio('categoria', cat.id_categoria));
       col.appendChild(card);

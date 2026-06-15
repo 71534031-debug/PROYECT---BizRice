@@ -6,6 +6,7 @@ from src.models.review import Comentario
 from src.models.rating import Valoracion
 from src.models.promotion import Promocion
 from src.models.social_network import RedSocial
+from src.models.sale import Venta, DetalleVenta
 
 __all__ = [
     "Usuario",
@@ -16,4 +17,6 @@ __all__ = [
     "Valoracion",
     "Promocion",
     "RedSocial",
+    "Venta",
+    "DetalleVenta",
 ]

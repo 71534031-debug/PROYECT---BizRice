@@ -62,13 +62,12 @@
                 <label class="form-label small fw-semibold">Precio (S/)</label>
                 <input type="number" class="form-control" id="prod-precio" step="0.01" min="0">
               </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label small fw-semibold">Estado de stock</label>
-                <select class="form-select" id="prod-stock">
-                  <option value="disponible">Disponible</option>
-                  <option value="bajo_stock">Bajo stock</option>
-                  <option value="agotado">Agotado</option>
-                </select>
+              <div class="col-md-4 mb-3">
+                <label class="form-label small fw-semibold">Stock (unidades)</label>
+                <input type="number" class="form-control" id="prod-stock" min="0" value="10">
+              </div>
+              <div class="col-md-2 mb-3 d-flex align-items-end">
+                <span class="small text-muted" id="prod-stock-label">Disponible</span>
               </div>
             </div>
             <div class="mb-3">

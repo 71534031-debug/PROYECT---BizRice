@@ -88,6 +88,7 @@ class ProductoResponse(BaseModel):
     descripcion: Optional[str] = None
     precio: Optional[float] = None
     imagen_url: Optional[str] = None
+    stock: int = 0
     estado_stock: str
 
 class ProductListResponse(BaseModel):
@@ -333,6 +334,7 @@ def listar_productos(
                 descripcion=p.descripcion,
                 precio=float(p.precio) if p.precio else None,
                 imagen_url=p.imagen_url,
+                stock=p.stock or 0,
                 estado_stock=p.estado_stock
             )
             for p in items

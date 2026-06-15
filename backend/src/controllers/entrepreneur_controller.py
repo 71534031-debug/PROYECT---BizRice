@@ -80,6 +80,7 @@ class ProductResponse(BaseModel):
     descripcion: Optional[str] = None
     precio: Optional[float] = None
     imagen_url: Optional[str] = None
+    stock: int = 0
     estado_stock: str
     activo: bool
     fecha_creacion: Optional[datetime] = None
@@ -364,6 +365,7 @@ def listar_mis_productos(
                 precio=float(p.precio) if p.precio else None,
                 imagen_url=p.imagen_url,
                 estado_stock=p.estado_stock,
+                stock=p.stock or 0,
                 activo=p.activo,
                 fecha_creacion=p.fecha_creacion
             )
@@ -381,6 +383,7 @@ async def crear_producto(
     nombre: str = Form(...),
     descripcion: Optional[str] = Form(None),
     precio: Optional[float] = Form(None),
+    stock: int = Form(0),
     estado_stock: str = Form("disponible"),
     imagen: Optional[UploadFile] = File(None),
     current_user: Usuario = Depends(require_role("emprendedor")),
@@ -409,6 +412,7 @@ async def crear_producto(
         descripcion=descripcion.strip() if descripcion else None,
         precio=precio,
         imagen_url=imagen_url,
+        stock=stock,
         estado_stock=estado_stock
     )
     db.add(prod)
@@ -422,6 +426,7 @@ async def crear_producto(
         precio=float(prod.precio) if prod.precio else None,
         imagen_url=prod.imagen_url,
         estado_stock=prod.estado_stock,
+        stock=prod.stock or 0,
         activo=prod.activo,
         fecha_creacion=prod.fecha_creacion
     )
@@ -433,6 +438,7 @@ async def actualizar_producto(
     nombre: Optional[str] = Form(None),
     descripcion: Optional[str] = Form(None),
     precio: Optional[float] = Form(None),
+    stock: Optional[int] = Form(None),
     estado_stock: Optional[str] = Form(None),
     imagen: Optional[UploadFile] = File(None),
     current_user: Usuario = Depends(require_role("emprendedor")),
@@ -455,6 +461,8 @@ async def actualizar_producto(
         prod.descripcion = descripcion.strip()
     if precio is not None:
         prod.precio = precio
+    if stock is not None:
+        prod.stock = stock
     if estado_stock is not None:
         prod.estado_stock = estado_stock
     if imagen and imagen.filename:
@@ -470,6 +478,7 @@ async def actualizar_producto(
         precio=float(prod.precio) if prod.precio else None,
         imagen_url=prod.imagen_url,
         estado_stock=prod.estado_stock,
+        stock=prod.stock or 0,
         activo=prod.activo,
         fecha_creacion=prod.fecha_creacion
     )

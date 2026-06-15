@@ -41,6 +41,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       reader.readAsDataURL(file);
     }
   });
+
+  document.getElementById('prod-stock').addEventListener('input', actualizarStockLabel);
 });
 
 const MAX_PRODUCTOS = 50;
@@ -77,11 +79,13 @@ function renderizarProductos(items) {
   grid.appendChild(addCol);
 
   items.forEach(p => {
-    const stockLabel = p.estado_stock === 'disponible' ? 'Disponible'
-                     : p.estado_stock === 'bajo_stock' ? 'Bajo stock'
+    const stockNum = p.stock || 0;
+    const estStock = stockNum > 10 ? 'disponible' : stockNum > 0 ? 'bajo_stock' : 'agotado';
+    const stockLabel = estStock === 'disponible' ? 'Disponible'
+                     : estStock === 'bajo_stock' ? 'Bajo stock'
                      : 'Agotado';
     const stockClass = p.activo === false ? 'badge-secondary'
-                     : `badge-${p.estado_stock}`;
+                     : `badge-${estStock}`;
 
     const col = document.createElement('div');
     col.className = 'col-12 col-md-6 col-lg-4';
@@ -93,7 +97,10 @@ function renderizarProductos(items) {
           <span class="badge ${stockClass} align-self-start mb-1">${stockLabel}</span>
           <h6 class="card-title">${p.nombre}</h6>
           <p class="card-text text-muted small flex-grow-1">${truncate(p.descripcion, 60)}</p>
-          <div class="precio mb-2">${formatPrice(p.precio)}</div>
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <div class="precio">${formatPrice(p.precio)}</div>
+            <small class="text-muted"><i class="bi bi-box"></i> ${stockNum} uds.</small>
+          </div>
           <div class="d-flex gap-2">
             <button class="btn btn-outline-primary btn-sm flex-grow-1"
                     data-prod-action="edit" data-prod-id="${p.id_producto}">
@@ -128,12 +135,30 @@ async function abrirModalProducto(id) {
       document.getElementById('prod-nombre').value = prod.nombre || '';
       document.getElementById('prod-descripcion').value = prod.descripcion || '';
       document.getElementById('prod-precio').value = prod.precio || '';
-      document.getElementById('prod-stock').value = prod.estado_stock || 'disponible';
+      document.getElementById('prod-stock').value = prod.stock ?? 10;
+      actualizarStockLabel();
     }
   } else {
     document.getElementById('modal-producto-label').textContent = 'Nuevo Producto';
     document.getElementById('btn-save-producto').innerHTML = '<i class="bi bi-check-lg"></i> Guardar Producto';
-    document.getElementById('prod-stock').value = 'disponible';
+    document.getElementById('prod-stock').value = '10';
+    actualizarStockLabel();
+  }
+}
+
+function actualizarStockLabel() {
+  const val = parseInt(document.getElementById('prod-stock').value) || 0;
+  const label = document.getElementById('prod-stock-label');
+  if (!label) return;
+  if (val > 10) {
+    label.textContent = 'Disponible';
+    label.className = 'small text-success';
+  } else if (val > 0) {
+    label.textContent = 'Bajo stock';
+    label.className = 'small text-warning';
+  } else {
+    label.textContent = 'Agotado';
+    label.className = 'small text-danger';
   }
 }
 
@@ -142,10 +167,12 @@ async function guardarProducto(e) {
   const id = document.getElementById('producto-id').value;
   const formData = new FormData();
 
+  const stockVal = parseInt(document.getElementById('prod-stock').value) || 0;
   formData.append('nombre', document.getElementById('prod-nombre').value.trim());
   formData.append('descripcion', document.getElementById('prod-descripcion').value.trim());
   formData.append('precio', document.getElementById('prod-precio').value || '');
-  formData.append('estado_stock', document.getElementById('prod-stock').value);
+  formData.append('stock', stockVal);
+  formData.append('estado_stock', stockVal > 10 ? 'disponible' : stockVal > 0 ? 'bajo_stock' : 'agotado');
 
   if (!id) {
     const data = await apiGet(`/entrepreneur/products?size=${MAX_PRODUCTOS}`);

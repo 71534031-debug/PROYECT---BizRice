@@ -10,6 +10,7 @@ class Producto(Base):
     descripcion       = Column(Text,        nullable=True)
     precio            = Column(Numeric(10,2), nullable=True)
     imagen_url        = Column(String(255), nullable=True)
+    stock             = Column(Integer,     nullable=False, default=0)
     estado_stock      = Column(String(20),  nullable=False, default="disponible")
     activo            = Column(Boolean,     nullable=False, default=True)
     fecha_creacion    = Column(DateTime, server_default=func.getdate())

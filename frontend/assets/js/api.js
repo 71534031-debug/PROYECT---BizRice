@@ -1,9 +1,23 @@
 /**
  * BIZRISE — API Helper
  * Funciones base para llamadas fetch() al backend
+ * Soporta múltiples entornos: dev local y producción (Render)
  */
 
-const API_URL = 'http://localhost:8000/api/v1';
+function getApiUrl() {
+  if (window.BIZRISE_API_URL) return window.BIZRISE_API_URL;
+  const host = window.location.hostname;
+  const port = window.location.port;
+  if (host === 'localhost' || host === '127.0.0.1') {
+    return 'http://localhost:8000/api/v1';
+  }
+  if (host.includes('vercel.app') || host.includes('bizrise') || port === '5500') {
+    return 'http://localhost:8000/api/v1';
+  }
+  return 'https://bizrise-backend.onrender.com/api/v1';
+}
+
+const API_URL = getApiUrl();
 
 function getAuthHeaders() {
   const token = localStorage.getItem('bizrise_access_token');

@@ -34,7 +34,11 @@ class Settings(BaseSettings):
 
     @property
     def ORIGINS_LIST(self) -> List[str]:
-        return [o.strip() for o in self.ALLOWED_ORIGINS.split(",")]
+        origins = [o.strip() for o in self.ALLOWED_ORIGINS.split(",")]
+        # Si contiene "*" o está vacío, permitir todo (producción)
+        if "*" in origins or not origins:
+            return ["*"]
+        return origins
 
     class Config:
         env_file = ".env"

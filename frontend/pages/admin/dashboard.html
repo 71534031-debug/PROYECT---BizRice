@@ -101,6 +101,50 @@
           </div>
         </div>
 
+        <!-- New Metrics Row -->
+        <div class="row g-4 mb-4" id="stats-cards-2">
+          <div class="col-md-4">
+            <div class="stats-card card h-100">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                  <div class="stats-icon stats-icon-primary">
+                    <i class="bi bi-people fs-5"></i>
+                  </div>
+                </div>
+                <p class="text-muted small fw-medium mb-1">Total Usuarios</p>
+                <h3 class="fw-bold mb-0" id="total-usuarios">0</h3>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="stats-card card h-100">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                  <div class="stats-icon stats-icon-primary">
+                    <i class="bi bi-box-seam fs-5"></i>
+                  </div>
+                </div>
+                <p class="text-muted small fw-medium mb-1">Total Productos</p>
+                <h3 class="fw-bold mb-0" id="total-productos">0</h3>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="stats-card card h-100">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                  <div class="stats-icon stats-icon-success">
+                    <i class="bi bi-cash-coin fs-5"></i>
+                  </div>
+                </div>
+                <p class="text-muted small fw-medium mb-1">Ventas Completadas</p>
+                <h3 class="fw-bold mb-0" id="total-ventas">0</h3>
+                <small class="text-muted" id="ingresos-totales">S/ 0.00 ingresos</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Main Grid -->
         <div class="row g-4">
           <!-- Table Section -->
@@ -159,6 +203,19 @@
                 <div class="d-flex align-items-end gap-3 w-100 justify-content-center chart-bars-container" id="chart-bars">
                   <p class="text-muted small text-center w-100 py-4">Cargando datos...</p>
                 </div>
+              </div>
+            </div>
+
+            <!-- Top Products Card -->
+            <div class="card border-0 shadow-sm" id="top-productos-card">
+              <div class="card-header bg-white border-bottom px-4 py-3">
+                <h6 class="fw-bold mb-0 d-flex align-items-center gap-2">
+                  <i class="bi bi-trophy text-warning"></i>
+                  Productos Más Vendidos
+                </h6>
+              </div>
+              <div class="card-body p-0" id="top-productos-body">
+                <p class="text-muted small text-center py-4 mb-0">Cargando...</p>
               </div>
             </div>
 
