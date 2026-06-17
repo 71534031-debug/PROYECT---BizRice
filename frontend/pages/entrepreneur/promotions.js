@@ -60,20 +60,20 @@ function renderizarPromociones(items) {
                        : 'Borrador';
 
     const fechas = [];
-    if (p.fecha_inicio) fechas.push(`Inicio: ${new Date(p.fecha_inicio).toLocaleDateString('es-PE')}`);
-    if (p.fecha_fin) fechas.push(`Fin: ${new Date(p.fecha_fin).toLocaleDateString('es-PE')}`);
+    if (p.fecha_inicio) fechas.push(`Inicio: ${escHtml(new Date(p.fecha_inicio).toLocaleDateString('es-PE'))}`);
+    if (p.fecha_fin) fechas.push(`Fin: ${escHtml(new Date(p.fecha_fin).toLocaleDateString('es-PE'))}`);
 
     return `
       <div class="col-12 col-md-6">
         <div class="card promo-card shadow-sm">
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-start mb-2">
-              <h6 class="card-title mb-0">${p.titulo}</h6>
+              <h6 class="card-title mb-0">${escHtml(p.titulo)}</h6>
               <span class="badge ${estadoClass}">${estadoLabel}</span>
             </div>
-            <p class="card-text text-muted small mb-2">${p.descripcion || 'Sin descripción'}</p>
+            <p class="card-text text-muted small mb-2">${escHtml(p.descripcion || 'Sin descripción')}</p>
             <small class="text-muted d-block mb-3">
-              <i class="bi bi-calendar"></i> ${fechas.join(' | ') || 'Sin fechas'}
+              <i class="bi bi-calendar"></i> ${escHtml(fechas.join(' | ')) || 'Sin fechas'}
             </small>
             <div class="d-flex gap-2">
               <button class="btn btn-outline-primary btn-sm flex-grow-1"
@@ -102,15 +102,20 @@ async function abrirModalPromocion(id) {
     document.getElementById('modal-promocion-label').textContent = 'Editar Promoción';
     document.getElementById('btn-save-promocion').innerHTML = '<i class="bi bi-check-lg"></i> Actualizar Promoción';
 
-    const items = await apiGet('/entrepreneur/promotions');
-    const promo = (items || []).find(p => p.id_promocion === id);
-    if (promo) {
-      document.getElementById('promocion-id').value = promo.id_promocion;
-      document.getElementById('promo-titulo').value = promo.titulo || '';
-      document.getElementById('promo-descripcion').value = promo.descripcion || '';
-      document.getElementById('promo-inicio').value = promo.fecha_inicio || '';
-      document.getElementById('promo-fin').value = promo.fecha_fin || '';
-      document.getElementById('promo-estado').value = promo.estado || 'activa';
+    try {
+      const items = await apiGet('/entrepreneur/promotions');
+      const promo = (items || []).find(p => p.id_promocion === id);
+      if (promo) {
+        document.getElementById('promocion-id').value = promo.id_promocion;
+        document.getElementById('promo-titulo').value = promo.titulo || '';
+        document.getElementById('promo-descripcion').value = promo.descripcion || '';
+        document.getElementById('promo-inicio').value = promo.fecha_inicio || '';
+        document.getElementById('promo-fin').value = promo.fecha_fin || '';
+        document.getElementById('promo-estado').value = promo.estado || 'activa';
+      }
+    } catch (e) {
+      showToast('Error al cargar promoción', 'danger');
+      return;
     }
   } else {
     document.getElementById('modal-promocion-label').textContent = 'Nueva Promoción';
@@ -127,16 +132,26 @@ async function guardarPromocion(e) {
   const fin = document.getElementById('promo-fin').value;
   const estado = document.getElementById('promo-estado').value;
 
+  if (inicio && new Date(inicio) < new Date(new Date().toDateString())) {
+    showToast('La fecha de inicio no puede ser anterior a hoy', 'warning');
+    return;
+  }
+
   if (inicio && fin && new Date(fin) < new Date(inicio)) {
     showToast('La fecha de fin debe ser posterior a la fecha de inicio', 'warning');
     return;
   }
 
   if (!id && estado === 'activa') {
-    const items = await apiGet('/entrepreneur/promotions');
-    const activas = (items || []).filter(p => p.estado === 'activa').length;
-    if (activas >= MAX_PROMOS_ACTIVAS) {
-      showToast(`Máximo ${MAX_PROMOS_ACTIVAS} promociones activas simultáneas`, 'warning');
+    try {
+      const items = await apiGet('/entrepreneur/promotions');
+      const activas = (items || []).filter(p => p.estado === 'activa').length;
+      if (activas >= MAX_PROMOS_ACTIVAS) {
+        showToast(`Máximo ${MAX_PROMOS_ACTIVAS} promociones activas simultáneas`, 'warning');
+        return;
+      }
+    } catch (e) {
+      showToast('Error al verificar promociones activas', 'danger');
       return;
     }
   }

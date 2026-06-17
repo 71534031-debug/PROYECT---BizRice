@@ -57,7 +57,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('search-input').scrollIntoView({ behavior: 'smooth' });
   });
 
+  document.getElementById('search-top').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      document.getElementById('search-input').value = e.target.value;
+      currentPage = 1;
+      cargarUsuarios();
+    }
+  });
+
   await cargarUsuarios();
+  initNotifications();
+  if (window.updateSidebarBadge) window.updateSidebarBadge();
 });
 
 let modalConfirmAction = null;
@@ -80,20 +90,11 @@ async function cargarUsuarios() {
     document.getElementById('counter-total').textContent = data.total ?? 0;
     document.getElementById('total-badge').textContent = data.total ?? 0;
 
-    // Compute role counts from items
-    let emprendedores = 0, clientes = 0, pendientesValidacion = 0;
-    (data.items || []).forEach(u => {
-      if (u.rol === 'emprendedor') emprendedores++;
-      if (u.rol === 'cliente') clientes++;
-    });
-    document.getElementById('counter-emprendedores').textContent = emprendedores;
-    document.getElementById('counter-clientes').textContent = clientes;
-    document.getElementById('emprendedores-pendientes').textContent = pendientesValidacion + ' pendientes de validacion';
-
     renderTable(data.items || []);
     renderPagination(data.pages || 1);
 
     cargarStatsTrend();
+    cargarRoleCounters();
   } catch (e) {
     showToast('Error al cargar usuarios', 'danger');
   }
@@ -107,6 +108,21 @@ async function cargarStatsTrend() {
       const c = stats.crecimiento_porcentaje || 0;
       trendEl.textContent = (c >= 0 ? '+' : '') + c + '% este mes';
     }
+  } catch (e) {
+    // non-critical
+  }
+}
+
+async function cargarRoleCounters() {
+  try {
+    const data = await apiGet('/admin/users?size=10000');
+    let emprendedores = 0, clientes = 0;
+    (data.items || []).forEach(u => {
+      if (u.rol === 'emprendedor') emprendedores++;
+      if (u.rol === 'cliente') clientes++;
+    });
+    document.getElementById('counter-emprendedores').textContent = emprendedores;
+    document.getElementById('counter-clientes').textContent = clientes;
   } catch (e) {
     // non-critical
   }
@@ -128,7 +144,7 @@ function renderTable(lista) {
     const inicial = (u.nombre || u.correo || '?')[0].toUpperCase();
     const avatarColorClasses = ['avatar-purple', 'avatar-blue', 'avatar-green', 'avatar-red', 'avatar-orange', 'avatar-teal'];
     const colorClass = avatarColorClasses[(u.id_usuario || 0) % avatarColorClasses.length];
-    const safeName = (u.nombre || u.correo || '').replace(/'/g, "\\'");
+    const safeName = escHtml(u.nombre || u.correo || '');
 
     const currentUser = getCurrentUser();
     const isMe = currentUser && currentUser.id_usuario === u.id_usuario;
@@ -150,16 +166,16 @@ function renderTable(lista) {
     return '<tr>' +
       '<td class="px-4 py-3">' +
         '<div class="user-info">' +
-          '<div class="avatar-placeholder ' + colorClass + '">' + inicial + '</div>' +
+          '<div class="avatar-placeholder ' + colorClass + '">' + escHtml(inicial) + '</div>' +
           '<div>' +
-            '<div class="user-name">' + (u.nombre || '&mdash;') + ' ' + (u.apellido || '') + '</div>' +
-            '<div class="user-email">' + (u.correo || '') + '</div>' +
+            '<div class="user-name">' + escHtml(u.nombre || '\u2014') + ' ' + escHtml(u.apellido || '') + '</div>' +
+            '<div class="user-email">' + escHtml(u.correo || '') + '</div>' +
           '</div>' +
         '</div>' +
       '</td>' +
-      '<td class="px-4 py-3"><span class="badge ' + rolClass + '">' + u.rol + '</span></td>' +
-      '<td class="px-4 py-3 small text-muted">' + date + '</td>' +
-      '<td class="px-4 py-3"><span class="badge ' + estadoClass + '">' + (u.estado || 'activo') + '</span></td>' +
+      '<td class="px-4 py-3"><span class="badge ' + rolClass + '">' + escHtml(u.rol) + '</span></td>' +
+      '<td class="px-4 py-3 small text-muted">' + escHtml(date) + '</td>' +
+      '<td class="px-4 py-3"><span class="badge ' + estadoClass + '">' + escHtml(u.estado || 'activo') + '</span></td>' +
       '<td class="px-4 py-3 text-end">' +
         '<div class="action-btn-group d-flex justify-content-end gap-1">' + actions + '</div>' +
       '</td>' +
@@ -294,7 +310,7 @@ async function exportarUsuariosCSV() {
 
 async function abrirEditarUsuario(id) {
   try {
-    const data = await apiGet('/admin/users?size=1');
+    const data = await apiGet('/admin/users?size=10000');
     const user = (data.items || []).find(u => u.id_usuario === id);
     if (!user) {
       showToast('Usuario no encontrado', 'danger');

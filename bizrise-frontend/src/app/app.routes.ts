@@ -32,5 +32,6 @@ export const routes: Routes = [
       { path: 'settings', loadComponent: () => import('./entrepreneur/settings/settings.component').then(m => m.EntrepreneurSettingsComponent) },
     ]
   },
-  { path: '**', redirectTo: '', pathMatch: 'full' },
+  { path: 'not-found', loadComponent: () => import('./not-found/not-found.component').then(m => m.NotFoundComponent) },
+  { path: '**', redirectTo: '/not-found' },
 ];

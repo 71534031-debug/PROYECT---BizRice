@@ -144,4 +144,9 @@ CREATE INDEX IX_Ventas_usuario     ON Ventas(id_usuario);
 CREATE INDEX IX_Ventas_emprendimiento ON Ventas(id_emprendimiento);
 CREATE INDEX IX_Ventas_estado      ON Ventas(estado);
 CREATE INDEX IX_Ventas_fecha       ON Ventas(fecha_creacion);
+CREATE INDEX IX_Emp_Categoria ON Emprendimientos(id_categoria);
+CREATE INDEX IX_Emp_Distrito  ON Emprendimientos(distrito);
+CREATE INDEX IX_Val_Emp       ON Valoraciones(id_emprendimiento);
+CREATE INDEX IX_Com_Emp       ON Comentarios(id_emprendimiento);
+CREATE INDEX IX_Prom_Emp      ON Promociones(id_emprendimiento);
 GO

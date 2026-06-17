@@ -9,9 +9,11 @@ from datetime import datetime, timedelta, date, timezone
 import random
 
 sys.path.insert(0, os.path.dirname(__file__))
-# Usar las credenciales del archivo .env — NO sobrescribir DB_PASSWORD
-os.environ.setdefault("SECRET_KEY", "seed-dev-key-not-for-production")
-os.environ.setdefault("ALLOWED_ORIGINS", "*")
+
+from src.config.settings import settings
+# SECRET_KEY debe estar definida en .env — sin fallback por seguridad
+if not settings.SECRET_KEY:
+    sys.exit("Falta SECRET_KEY en .env")
 
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session, joinedload
@@ -501,6 +503,218 @@ EMPRENDIMIENTOS = [
         "categoria": "Servicios",
         "horario_apertura": "07:00", "horario_cierre": "20:00"
     },
+    # ─── SALUD Y BIENESTAR ──────────────────────────────────────
+    {
+        "nombre": "Centro Médico Huancayo Salud",
+        "descripcion": "Consultas médicas generales y especializadas, análisis clínicos, ecografías y chequeos preventivos. Atención particular y seguros.",
+        "telefono": "969 123 456",
+        "direccion": "Av. Mariscal Castilla 1560",
+        "distrito": "Huancayo",
+        "categoria": "Salud y Bienestar",
+        "horario_apertura": "07:00", "horario_cierre": "21:00"
+    },
+    {
+        "nombre": "Consultorio Dental Sonrisa Perfecta",
+        "descripcion": "Odontología general, ortodoncia, implantes dentales, blanqueamiento y endodoncia. Tecnología de punta y precios accesibles.",
+        "telefono": "969 234 567",
+        "direccion": "Jr. Cusco 456",
+        "distrito": "El Tambo",
+        "categoria": "Salud y Bienestar",
+        "horario_apertura": "08:00", "horario_cierre": "20:00"
+    },
+    {
+        "nombre": "Centro de Terapias Alternativas Armonía",
+        "descripcion": "Terapias alternativas, acupuntura, reflexología, masajes descontracturantes y sesiones de reiki. Equilibra tu cuerpo y mente.",
+        "telefono": "969 345 678",
+        "direccion": "Calle Real 567",
+        "distrito": "Huancayo",
+        "categoria": "Salud y Bienestar",
+        "horario_apertura": "09:00", "horario_cierre": "19:00"
+    },
+    {
+        "nombre": "Óptica Visual Center",
+        "descripcion": "Exámenes de la vista, venta de lentes correctivos y de sol, lentes de contacto. Marcas originales con garantía.",
+        "telefono": "969 456 789",
+        "direccion": "Av. Giráldez 789",
+        "distrito": "Huancayo",
+        "categoria": "Salud y Bienestar",
+        "horario_apertura": "09:00", "horario_cierre": "20:00"
+    },
+    {
+        "nombre": "Psicología y Bienestar Integral",
+        "descripcion": "Atención psicológica individual y de pareja, terapia cognitivo-conductual, manejo de ansiedad y estrés. Sesiones presenciales y virtuales.",
+        "telefono": "969 567 890",
+        "direccion": "Jr. Arequipa 345",
+        "distrito": "El Tambo",
+        "categoria": "Salud y Bienestar",
+        "horario_apertura": "08:00", "horario_cierre": "20:00"
+    },
+    # ─── EDUCACIÓN ──────────────────────────────────────────────
+    {
+        "nombre": "Academia Preuniversitaria Integral",
+        "descripcion": "Preparación para la universidad, cursos de matemáticas, ciencias, letras. Clases presenciales con docentes especializados.",
+        "telefono": "969 678 901",
+        "direccion": "Calle Real 789",
+        "distrito": "Huancayo",
+        "categoria": "Educación",
+        "horario_apertura": "07:00", "horario_cierre": "22:00"
+    },
+    {
+        "nombre": "Centro de Idiomas Británico Huancayo",
+        "descripcion": "Cursos de inglés, portugués y francés. Preparación para exámenes internacionales TOEFL, IELTS. Profesores nativos.",
+        "telefono": "969 789 012",
+        "direccion": "Av. Independencia 567",
+        "distrito": "Huancayo",
+        "categoria": "Educación",
+        "horario_apertura": "08:00", "horario_cierre": "21:00"
+    },
+    {
+        "nombre": "Taller de Arte y Creatividad",
+        "descripcion": "Talleres de pintura, dibujo y escultura para niños y adultos. Desarrolla tu creatividad con nuestros artistas locales.",
+        "telefono": "969 890 123",
+        "direccion": "Jr. Puno 567",
+        "distrito": "El Tambo",
+        "categoria": "Educación",
+        "horario_apertura": "09:00", "horario_cierre": "20:00"
+    },
+    {
+        "nombre": "Instituto de Música y Artes Wanka",
+        "descripcion": "Clases de guitarra, piano, canto, violín y teoría musical. Grupos para todas las edades y niveles.",
+        "telefono": "969 901 234",
+        "direccion": "Av. Ferrocarril 345",
+        "distrito": "Huancayo",
+        "categoria": "Educación",
+        "horario_apertura": "08:00", "horario_cierre": "21:00"
+    },
+    {
+        "nombre": "Centro de Cómputo e Informática",
+        "descripcion": "Cursos de computación, programación web, office avanzado, diseño gráfico. Certificaciones y horarios flexibles.",
+        "telefono": "969 012 345",
+        "direccion": "Calle Real 1234",
+        "distrito": "Huancayo",
+        "categoria": "Educación",
+        "horario_apertura": "08:00", "horario_cierre": "21:00"
+    },
+    # ─── CONSTRUCCIÓN Y FERRETERÍA ──────────────────────────────
+    {
+        "nombre": "Ferretería El Constructor",
+        "descripcion": "Venta de materiales de construcción, cemento, fierro, ladrillos, herramientas eléctricas y manuales. Precios por mayor y menor.",
+        "telefono": "970 123 456",
+        "direccion": "Av. Centenario 123",
+        "distrito": "Huancayo",
+        "categoria": "Construcción y Ferretería",
+        "horario_apertura": "06:30", "horario_cierre": "19:00"
+    },
+    {
+        "nombre": "Distribuidora de Acabados Mil Colores",
+        "descripcion": "Venta de pinturas, cerámicos, mayólicas, sanitarios y acabados para construcción. Las mejores marcas al mejor precio.",
+        "telefono": "970 234 567",
+        "direccion": "Av. Mariscal Castilla 2345",
+        "distrito": "Huancayo",
+        "categoria": "Construcción y Ferretería",
+        "horario_apertura": "08:00", "horario_cierre": "19:00"
+    },
+    {
+        "nombre": "Servicios de Construcción y Remodelaciones",
+        "descripcion": "Construcción de viviendas, remodelaciones, acabados finos, instalaciones eléctricas y sanitarias. Presupuesto sin compromiso.",
+        "telefono": "970 345 678",
+        "direccion": "Jr. Ayacucho 678",
+        "distrito": "El Tambo",
+        "categoria": "Construcción y Ferretería",
+        "horario_apertura": "07:00", "horario_cierre": "18:00"
+    },
+    {
+        "nombre": "Maderera y Carpintería El Roble",
+        "descripcion": "Venta de maderas, triplay, contraplacados. Fabricación de muebles de cocina, closets y carpintería en general.",
+        "telefono": "970 456 789",
+        "direccion": "Av. Panamericana 789",
+        "distrito": "Chilca",
+        "categoria": "Construcción y Ferretería",
+        "horario_apertura": "07:00", "horario_cierre": "18:00"
+    },
+    # ─── ENTRETENIMIENTO ─────────────────────────────────────────
+    {
+        "nombre": "Zona Gamer Huancayo",
+        "descripcion": "Centro de videojuegos, alquiler de consolas PS5, Xbox, PC gaming. Torneos semanales y zona VIP para eventos.",
+        "telefono": "970 567 890",
+        "direccion": "Calle Real 456",
+        "distrito": "Huancayo",
+        "categoria": "Entretenimiento",
+        "horario_apertura": "10:00", "horario_cierre": "23:00"
+    },
+    {
+        "nombre": "Bolos y Bowling Wanka",
+        "descripcion": "Centro de entretenimiento con pistas de bowling, billar, ping pong y área de videojuegos. Ideal para grupos y eventos.",
+        "telefono": "970 678 901",
+        "direccion": "Av. Giráldez 1234",
+        "distrito": "Huancayo",
+        "categoria": "Entretenimiento",
+        "horario_apertura": "10:00", "horario_cierre": "23:00"
+    },
+    {
+        "nombre": "Cine Club Huancayo",
+        "descripcion": "Cine alternativo con películas independientes, ciclos de cine peruano y clásicos. Palomitas artesanales y café de especialidad.",
+        "telefono": "970 789 012",
+        "direccion": "Jr. Puno 234",
+        "distrito": "El Tambo",
+        "categoria": "Entretenimiento",
+        "horario_apertura": "14:00", "horario_cierre": "23:00"
+    },
+    {
+        "nombre": "Karaoke y Billar La Noche",
+        "descripcion": "Karaoke con equipo profesional, billar, dardos y juegos de mesa. Ambiente familiar y música variada.",
+        "telefono": "970 890 123",
+        "direccion": "Av. Ferrocarril 678",
+        "distrito": "Huancayo",
+        "categoria": "Entretenimiento",
+        "horario_apertura": "17:00", "horario_cierre": "02:00"
+    },
+    {
+        "nombre": "Parque de Diversiones Valle Mágico",
+        "descripcion": "Parque de atracciones mecánicas, juegos infantiles, zona de food trucks y espectáculos en vivo los fines de semana.",
+        "telefono": "970 901 234",
+        "direccion": "Av. Circunvalación 567",
+        "distrito": "Huancayo",
+        "categoria": "Entretenimiento",
+        "horario_apertura": "10:00", "horario_cierre": "22:00"
+    },
+    # ─── TRANSPORTE ─────────────────────────────────────────────
+    {
+        "nombre": "Taxi Seguro Huancayo",
+        "descripcion": "Servicio de taxi corporativo y particular, viajes interprovinciales, traslados al aeropuerto. Conductores identificados y vehículos cómodos.",
+        "telefono": "971 123 456",
+        "direccion": "Jr. Arequipa 789",
+        "distrito": "Huancayo",
+        "categoria": "Transporte",
+        "horario_apertura": "05:00", "horario_cierre": "23:00"
+    },
+    {
+        "nombre": "Mudanzas y Fletes Rápido",
+        "descripcion": "Servicio de mudanzas locales e interprovinciales, fletes, alquiler de camiones con chofer. Presupuesto sin compromiso.",
+        "telefono": "971 234 567",
+        "direccion": "Av. Independencia 345",
+        "distrito": "El Tambo",
+        "categoria": "Transporte",
+        "horario_apertura": "06:00", "horario_cierre": "20:00"
+    },
+    {
+        "nombre": "Transporte Escolar y Empresarial",
+        "descripcion": "Servicio de transporte escolar, recogida de personal para empresas. Unidades modernas con seguro y tracking GPS.",
+        "telefono": "971 345 678",
+        "direccion": "Av. Centenario 890",
+        "distrito": "Chilca",
+        "categoria": "Transporte",
+        "horario_apertura": "05:00", "horario_cierre": "22:00"
+    },
+    {
+        "nombre": "Envíos y Mensajería Expresa",
+        "descripcion": "Servicio de mensajería y encomiendas dentro de Huancayo y a nivel nacional. Seguimiento online y entregas puerta a puerta.",
+        "telefono": "971 456 789",
+        "direccion": "Calle Real 234",
+        "distrito": "Huancayo",
+        "categoria": "Transporte",
+        "horario_apertura": "07:00", "horario_cierre": "19:00"
+    },
 ]
 
 CATEGORIAS = [
@@ -513,6 +727,11 @@ CATEGORIAS = [
     {"nombre": "Belleza", "descripcion": "Cuidado personal, estética y cosmética"},
     {"nombre": "Agricultura", "descripcion": "Productos agrícolas y derivados"},
     {"nombre": "Hogar", "descripcion": "Decoración, muebles y artículos para el hogar"},
+    {"nombre": "Salud y Bienestar", "descripcion": "Clínicas, consultorios y centros de bienestar"},
+    {"nombre": "Educación", "descripcion": "Academias, institutos y centros de formación"},
+    {"nombre": "Construcción y Ferretería", "descripcion": "Materiales de construcción, ferreterías y acabados"},
+    {"nombre": "Entretenimiento", "descripcion": "Cines, juegos, recreación y ocio"},
+    {"nombre": "Transporte", "descripcion": "Transporte de pasajeros, mudanzas y logística"},
 ]
 
 PRODUCTOS_POR_CATEGORIA = {
@@ -617,6 +836,62 @@ PRODUCTOS_POR_CATEGORIA = {
         ("Alfombra Tejida 1.5x2m", "Alfombra tejida a mano con lana de oveja", 120.00),
         ("Organizador de Escritorio", "Organizador de escritorio de bambú", 28.00),
         ("Portarretratos Familiar x3", "Set de 3 portarretratos de madera", 25.00),
+    ],
+    "Salud y Bienestar": [
+        ("Chequeo Médico General", "Evaluación médica completa con análisis de sangre y orina", 80.00),
+        ("Limpieza Dental Profesional", "Limpieza dental con ultrasonido, incluye fluorización", 70.00),
+        ("Consulta Psicológica", "Sesión de terapia psicológica individual, 50 minutos", 60.00),
+        ("Examen de la Vista Completo", "Evaluación visual completa con graduación", 45.00),
+        ("Mascarilla Facial Hidratante", "Mascarilla facial con ácido hialurónico, tratamiento spa", 35.00),
+        ("Masaje Descontracturante 60min", "Masaje descontracturante de espalda y cuello", 55.00),
+        ("Terapia de Acupuntura", "Sesión de acupuntura tradicional china", 40.00),
+        ("Lentes de Sol Polarizados", "Lentes de sol con filtro UV400 y polarizado", 89.00),
+        ("Pack Chequeo Preventivo", "Chequeo preventivo completo: laboratorio + ecografía", 150.00),
+        ("Consulta Nutricional", "Evaluación nutricional personalizada con plan de alimentación", 55.00),
+    ],
+    "Educación": [
+        ("Curso de Inglés Básico Mensual", "Curso de inglés nivel básico, 8 clases mensuales", 120.00),
+        ("Taller de Pintura para Niños", "Taller de pintura infantil, 4 sesiones", 60.00),
+        ("Clases de Guitarra Particulares", "Clase particular de guitarra, 1 hora", 35.00),
+        ("Curso de Programación Web", "Curso intensivo de HTML, CSS y JavaScript, 3 meses", 250.00),
+        ("Preparación Examen Universitario", "Curso integral de preparación preuniversitaria", 180.00),
+        ("Taller de Fotografía Digital", "Taller de fotografía con celular y cámara, 6 sesiones", 90.00),
+        ("Clases de Portugués Nivel 1", "Curso de portugués nivel básico, 10 clases", 150.00),
+        ("Curso de Excel Avanzado", "Curso de Excel con tablas dinámicas y macros", 80.00),
+        ("Taller de Lettering y Caligrafía", "Taller de lettering para principiantes, materiales incluidos", 45.00),
+        ("Clases de Baile Salsa/Bachata", "Pack 4 clases de baile en pareja o individual", 60.00),
+    ],
+    "Construcción y Ferretería": [
+        ("Cemento Portland 42.5kg", "Bolsa de cemento portland, 42.5 kg", 25.00),
+        ("Pintura Látex Blanca 4L", "Pintura látex lavable blanco mate, galón", 55.00),
+        ("Taladro Percutor 600W", "Taladro percutor eléctrico 600W con accesorios", 120.00),
+        ("Cerámico 60x60 Beige m2", "Cerámico rectificado 60x60 cm, color beige, metro cuadrado", 32.00),
+        ("Malla Gallinero 10m", "Malla gallinero galvanizada, 10 metros de largo", 28.00),
+        ("Tubería PVC 1/2 x 3m", "Tubería PVC para agua fría, 1/2 pulgada, 3 metros", 8.00),
+        ("Interruptor Diferencial 25A", "Interruptor diferencial 25 amperios, 30mA", 45.00),
+        ("Llave de Paso 1/2 Bronce", "Llave de paso de bronce cromado, 1/2 pulgada", 18.00),
+        ("Foco LED 12W Luz Fría", "Foco LED 12W luz fría 6500K, rosca E27", 6.00),
+        ("Cable Eléctrico THW 2.5mm 100m", "Cable eléctrico THW 2.5mm², rollo de 100 metros", 85.00),
+    ],
+    "Entretenimiento": [
+        ("Entrada Zona Gamer 2 Horas", "Entrada a zona de videojuegos por 2 horas", 15.00),
+        ("Partida de Bowling x Persona", "Partida de bowling por persona, incluye zapatos", 18.00),
+        ("Entrada Cine Club", "Entrada general a Cine Club Huancayo", 10.00),
+        ("Hora de Karaoke Privado", "Hora en sala privada de karaoke para hasta 6 personas", 40.00),
+        ("Canje de Fichas Billar 1h", "Alquiler de mesa de billar por 1 hora", 12.00),
+        ("Entrada Parque de Diversiones", "Entrada general al parque, juegos ilimitados", 25.00),
+        ("Noche de Bowling Grupo x4", "Pack nocturno de bowling para 4 personas", 60.00),
+        ("Tarjeta Recargable Gamer 50 soles", "Tarjeta recargable para zona gamer con saldo de S/50", 50.00),
+    ],
+    "Transporte": [
+        ("Taxi Local Dentro de Huancayo", "Viaje en taxi dentro del casco urbano de Huancayo", 8.00),
+        ("Traslado Aeropuerto Jauja", "Traslado privado de Huancayo al Aeropuerto de Jauja", 60.00),
+        ("Mudanza Local Básica", "Mudanza dentro de Huancayo, incluye 2 horas y 2 operarios", 180.00),
+        ("Encomienda Huancayo-Lima", "Envío de encomienda de hasta 5kg a Lima", 25.00),
+        ("Flete Camión 8m3", "Alquiler de camión 8m3 con chofer para medio día", 150.00),
+        ("Transporte Escolar Mensual", "Servicio de transporte escolar ida y vuelta, mensual", 200.00),
+        ("Traslado Ejecutivo Empresarial", "Traslado ejecutivo para eventos empresariales", 80.00),
+        ("Tour en City Tour 4 Horas", "City tour privado por Huancayo, 4 horas en movilidad", 100.00),
     ],
 }
 
@@ -964,7 +1239,7 @@ def seed():
         comentarios_count = 0
 
         for emp in negocios_creados:
-            num_reviews = random.randint(2, 6)
+            num_reviews = random.randint(4, 10)
             reviewers = random.sample(clientes, min(num_reviews, len(clientes)))
             for reviewer in reviewers:
                 puntuacion = weighted_choice(
@@ -981,36 +1256,69 @@ def seed():
                 db.add(valoracion)
                 valoraciones_count += 1
 
-                if random.random() < 0.7:
+                if random.random() < 0.85:
                     comentarios_textos = {
                         5: [
-                            f"Excelente servicio, muy recomendado. Volveré sin duda.",
-                            f"Me encantó todo, la atención fue increíble.",
-                            f"Muy buenos productos, calidad superior.",
-                            f"El mejor emprendimiento de Huancayo, sigan así.",
-                            f"Quedé muy satisfecho con la compra, 10/10.",
+                            "Excelente servicio, muy recomendado. Volveré sin duda.",
+                            "Me encantó todo, la atención fue increíble.",
+                            "Muy buenos productos, calidad superior.",
+                            "El mejor emprendimiento de Huancayo, sigan así.",
+                            "Quedé muy satisfecho con la compra, 10/10.",
                             "Atención de primera, productos de gran calidad.",
+                            "Superó mis expectativas, volveré a comprar pronto.",
+                            "Rápidos, amables y el producto llegó en perfecto estado.",
+                            "Desde que los descubrí soy cliente frecuente, recomendados.",
+                            "El trato al cliente es excepcional, se nota que les gusta lo que hacen.",
+                            "Productos de calidad y precios justos, todo perfecto.",
+                            "Una experiencia de compra increíble, todo bien empaquetado.",
+                            "Me encanta apoyar el emprendimiento local, y este es de los mejores.",
+                            "Excelente calidad-precio, sin duda volveré a comprar.",
+                            "El mejor servicio al cliente que he recibido en Huancayo.",
                         ],
                         4: [
                             "Muy buena atención, solo mejorar el tiempo de entrega.",
                             "Buenos productos, precios justos. Recomendado.",
                             "Me gustó mucho, volveré a comprar.",
                             "Casi todo perfecto, un detalle mínimo que mejorar.",
+                            "Buena experiencia, el producto cumplió lo prometido.",
+                            "Recomendado, buena atención y productos de calidad.",
+                            "Me gustó la variedad de productos que ofrecen.",
+                            "Todo bien, solo la demora en la entrega pero fuera de eso bien.",
+                            "Buena relación calidad-precio, seguramente volveré.",
+                            "Atención cordial y productos frescos, muy buena experiencia.",
+                            "Cumplieron con lo ofrecido, volveré a consultarles.",
+                            "Buen servicio, mejoraría un poco la comunicación con el cliente.",
                         ],
                         3: [
                             "Estuvo bien, esperaba un poco más.",
                             "Podría mejorar, pero en general es aceptable.",
                             "Productos regulares, atención buena.",
                             "Cumple con lo básico, nada extraordinario.",
+                            "Normal, ni fu ni fa. Sirve para lo básico.",
+                            "Esperaba un poco más por el precio pero está bien.",
+                            "Se esfuerzan pero les falta mejorar en algunos aspectos.",
+                            "Regular, tal vez vuelva en otra ocasión.",
+                            "No está mal pero he visto mejores opciones en la zona.",
+                            "Aceptable, cumple su función pero sin sobresalir.",
                         ],
                         2: [
                             "No me gustó mucho, la atención fue lenta.",
                             "Regular, esperaba mejor calidad.",
                             "Los precios son altos para lo que ofrecen.",
+                            "Tardaron mucho en la entrega y el producto llegó regular.",
+                            "La atención no fue la mejor, hubo demoras innecesarias.",
+                            "El producto no se veía como en las fotos, decepcionante.",
+                            "Pésima comunicación, no responden los mensajes a tiempo.",
+                            "Por el precio esperaba mucho más calidad, no volvería.",
                         ],
                         1: [
                             "Mala experiencia, no recomiendo.",
                             "Decepcionado, el producto no era lo esperado.",
+                            "Pésimo servicio, no cumplieron con lo acordado.",
+                            "No volveré, la peor atención que he recibido.",
+                            "El producto llegó dañado y no quisieron hacer el cambio.",
+                            "Muy mala experiencia, no respondieron mis reclamos.",
+                            "No recomiendo para nada, pérdida de tiempo y dinero.",
                         ]
                     }
                     textos = comentarios_textos.get(puntuacion, comentarios_textos[3])

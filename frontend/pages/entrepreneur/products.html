@@ -41,47 +41,60 @@
     <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title fw-bold" id="modal-producto-title">
+          <h5 class="modal-title fw-bold">
             <i class="bi bi-plus-circle"></i> <span id="modal-producto-label">Nuevo Producto</span>
           </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
+        <div id="modal-producto-alert" class="mx-3 mt-3 d-none"></div>
         <form id="producto-form" novalidate>
           <div class="modal-body">
             <input type="hidden" id="producto-id">
             <div class="mb-3">
-              <label class="form-label small fw-semibold">Nombre del producto</label>
-              <input type="text" class="form-control" id="prod-nombre" required>
+              <label class="form-label small fw-semibold">Nombre del producto <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="prod-nombre" required minlength="3" maxlength="150">
+              <div class="invalid-feedback">El nombre debe tener al menos 3 caracteres</div>
             </div>
             <div class="mb-3">
               <label class="form-label small fw-semibold">Descripción</label>
-              <textarea class="form-control" id="prod-descripcion" rows="2"></textarea>
+              <textarea class="form-control" id="prod-descripcion" rows="3" maxlength="500"></textarea>
+              <div class="invalid-feedback">Máximo 500 caracteres</div>
             </div>
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label class="form-label small fw-semibold">Precio (S/)</label>
-                <input type="number" class="form-control" id="prod-precio" step="0.01" min="0">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Precio (S/) <span class="text-danger">*</span></label>
+                <input type="number" class="form-control" id="prod-precio" step="0.01" min="0.10" required placeholder="0.00">
+                <div class="invalid-feedback">Ingresa un precio mayor a 0</div>
               </div>
-              <div class="col-md-4 mb-3">
+              <div class="col-md-3">
                 <label class="form-label small fw-semibold">Stock (unidades)</label>
                 <input type="number" class="form-control" id="prod-stock" min="0" value="10">
               </div>
-              <div class="col-md-2 mb-3 d-flex align-items-end">
-                <span class="small text-muted" id="prod-stock-label">Disponible</span>
+              <div class="col-md-3">
+                <label class="form-label small fw-semibold">Estado de stock</label>
+                <select class="form-select" id="prod-estado-stock">
+                  <option value="disponible">Disponible</option>
+                  <option value="bajo_stock">Bajo Stock</option>
+                  <option value="agotado">Agotado</option>
+                </select>
               </div>
             </div>
-            <div class="mb-3">
+            <div class="mb-3 mt-3">
               <label class="form-label small fw-semibold">Imagen del producto</label>
               <input type="file" class="form-control" id="prod-imagen" accept="image/jpeg,image/png,image/webp">
+              <small class="text-muted">Máximo 2MB — JPG, PNG o WebP</small>
               <div id="prod-imagen-preview" class="mt-2 d-none">
                 <img src="" class="img-fluid rounded preview-prod-img">
               </div>
+              <div class="invalid-feedback">La imagen no debe superar los 2MB</div>
             </div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
             <button type="submit" class="btn btn-primary" id="btn-save-producto">
-              <i class="bi bi-check-lg"></i> Guardar Producto
+              <span class="spinner-border spinner-border-sm d-none" id="spinner-save" role="status"></span>
+              <i class="bi bi-check-lg" id="icon-save"></i>
+              <span id="text-save">Guardar Producto</span>
             </button>
           </div>
         </form>

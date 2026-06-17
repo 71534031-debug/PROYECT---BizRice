@@ -18,7 +18,10 @@ function validarCoincidencia() {
   const pass = document.getElementById('reg-contrasena').value;
   const confirm = document.getElementById('reg-confirmar').value;
 
-  if (confirm.length === 0) return;
+  if (confirm.length === 0) {
+    document.getElementById('reg-confirmar').classList.remove('is-invalid');
+    return;
+  }
 
   if (pass !== confirm) {
     document.getElementById('reg-confirmar').classList.add('is-invalid');
@@ -57,7 +60,7 @@ async function handleRegister(e) {
     document.getElementById('reg-apellido').classList.remove('is-invalid');
   }
 
-  if (!correo || !correo.includes('@')) {
+  if (!correo || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
     document.getElementById('reg-correo').classList.add('is-invalid');
     valid = false;
   } else {

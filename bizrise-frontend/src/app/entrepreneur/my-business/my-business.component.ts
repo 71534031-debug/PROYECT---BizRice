@@ -107,7 +107,7 @@ import { ToastService } from '../../services/toast.service';
             <div class="card-body">
               <h6 class="fw-bold mb-3">Imagen de Portada</h6>
               @if (previewUrl()) {
-                <img [src]="previewUrl()" class="d-block mb-2 rounded" style="max-height:200px;object-fit:cover;width:100%" id="portada-preview">
+                <img [src]="previewUrl()" class="d-block mb-2 rounded" style="max-height:200px;object-fit:cover;width:100%" id="portada-preview" [alt]="'Vista previa'" loading="lazy">
               }
               <input type="file" class="form-control form-control-sm" accept="image/jpeg,image/png,image/webp" (change)="onFileSelected($event)">
               @if (uploadError()) { <div class="text-danger small mt-1">{{ uploadError() }}</div> }
@@ -121,7 +121,7 @@ import { ToastService } from '../../services/toast.service';
           <div class="card border-0 shadow-sm mb-4">
             <div class="card-body text-center">
               @if (b.imagen_portada_url) {
-                <img [src]="b.imagen_portada_url" class="rounded mb-2" style="width:100%;max-height:120px;object-fit:cover" id="preview-thumb">
+                <img [src]="b.imagen_portada_url" class="rounded mb-2" style="width:100%;max-height:120px;object-fit:cover" id="preview-thumb" [alt]="b.nombre" loading="lazy">
               } @else {
                 <div class="img-placeholder rounded mb-2" style="height:80px"><i class="bi bi-shop"></i></div>
               }

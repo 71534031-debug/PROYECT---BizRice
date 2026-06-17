@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, Header, Query
 from pydantic import BaseModel
 from datetime import datetime
@@ -96,8 +97,10 @@ def listar_ventas(
             "id_emprendimiento": busqueda_id if user.get("rol") == "emprendedor" else (id_emprendimiento or 0),
             "page": page, "size": size, "estado": estado,
         })
-    except Exception:
-        rows = []
+    except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error obteniendo ventas: {e}")
+        raise HTTPException(500, "Error al obtener ventas")
 
     if not rows:
         return VentaListResponse(items=[], total=0, page=page, size=size, pages=0)

@@ -8,6 +8,11 @@ const CATEGORY_IMAGES = {
   'Belleza': 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?w=800&q=80',
   'Agricultura': 'https://images.unsplash.com/photo-1500651230702-0e2d8a49d4ad?w=800&q=80',
   'Hogar': 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800&q=80',
+  'Salud y Bienestar': 'https://images.unsplash.com/photo-1559757175-5700dde675bc?w=800&q=80',
+  'Educación': 'https://images.unsplash.com/photo-1523050854058-8df90110c7f1?w=800&q=80',
+  'Construcción y Ferretería': 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&q=80',
+  'Entretenimiento': 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80',
+  'Transporte': 'https://images.unsplash.com/photo-1566576721341-5f0b11f72db2?w=800&q=80',
 };
 
 const COLECCIONES = [
@@ -87,20 +92,20 @@ async function cargarCategorias() {
 
       link.innerHTML = `
         <div class="cat-card-img-wrap">
-          <img src="${imgUrl}" alt="${cat.nombre}" loading="lazy">
+          <img src="${imgUrl}" alt="${escHtml(cat.nombre)}" loading="lazy">
         </div>
         <div class="cat-card-gradient"></div>
         <div class="cat-card-circle-img">
-          <img src="${circleImg}" alt="${cat.nombre}" loading="lazy">
+          <img src="${circleImg}" alt="${escHtml(cat.nombre)}" loading="lazy">
         </div>
         ${isFeatured ? '<div class="cat-card-star"><i class="bi bi-star-fill"></i></div>' : ''}
         <div class="cat-card-content">
           <div class="d-flex align-items-center gap-2 mb-2">
             ${badge ? `<span class="cat-badge ${badge === 'Top' ? 'cat-badge-featured' : ''}">${badge}</span>` : ''}
-            <small class="cat-count">${count} negocios</small>
+            <small class="cat-count">${escHtml(count)} negocios</small>
           </div>
-          <h3>${cat.nombre}</h3>
-          <p>${descripcion}</p>
+          <h3>${escHtml(cat.nombre)}</h3>
+          <p>${escHtml(descripcion)}</p>
         </div>
       `;
 

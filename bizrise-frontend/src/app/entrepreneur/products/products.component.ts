@@ -1,9 +1,10 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { EntrepreneurService } from '../../services/entrepreneur.service';
 import { ToastService } from '../../services/toast.service';
 
 @Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-entrepreneur-products',
   standalone: true,
   imports: [FormsModule],
@@ -24,7 +25,7 @@ import { ToastService } from '../../services/toast.service';
         <div class="col-6 col-md-4 col-lg-3">
           <div class="card border-0 shadow-sm h-100 producto-card">
             @if (p.imagen_url) {
-              <img [src]="p.imagen_url" class="card-img-top product-img" [alt]="p.nombre">
+              <img [src]="p.imagen_url" class="card-img-top product-img" [alt]="p.nombre" [attr.loading]="'lazy'">
             } @else {
               <div class="img-placeholder product-img d-flex align-items-center justify-content-center"><i class="bi bi-box"></i></div>
             }
@@ -91,7 +92,7 @@ import { ToastService } from '../../services/toast.service';
                 <label class="form-label small fw-semibold">Imagen</label>
                 <input type="file" class="form-control form-control-sm" accept="image/jpeg,image/png,image/webp" (change)="onFileSelected($event)">
                 @if (previewUrl()) {
-                  <img [src]="previewUrl()" class="mt-1 rounded" style="max-height:80px">
+                  <img [src]="previewUrl()" class="mt-1 rounded" style="max-height:80px" alt="Vista previa del producto" loading="lazy">
                 }
               </div>
               @if (formError()) { <div class="text-danger small mt-1">{{ formError() }}</div> }

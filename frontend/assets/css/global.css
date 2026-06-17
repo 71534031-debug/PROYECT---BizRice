@@ -193,6 +193,30 @@ a:hover { color: var(--bizrise-primary-dark); }
 .badge-bajo_stock { background-color: #ffc107; color: #000; }
 .badge-agotado    { background-color: #dc3545; }
 
+/* Notifications dropdown */
+.notif-dropdown {
+  width: 360px;
+  max-height: 420px;
+  overflow-y: auto;
+  border-radius: 12px;
+  margin-top: 8px !important;
+}
+.notif-dropdown .dropdown-item {
+  white-space: normal;
+  border-bottom: 1px solid #f1f3f4;
+  transition: background 0.15s;
+}
+.notif-dropdown .dropdown-item:last-of-type {
+  border-bottom: none;
+}
+.notif-dropdown .dropdown-item:hover {
+  background: var(--bizrise-primary-bg);
+}
+.notif-dropdown .notif-list {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
 /* Utilidades */
 .cursor-pointer { cursor: pointer; }
 .tracking-wide { letter-spacing: 0.08em; }

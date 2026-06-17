@@ -4,8 +4,13 @@
  */
 
 function getCurrentUser() {
-  const raw = localStorage.getItem('bizrise_user');
-  return raw ? JSON.parse(raw) : null;
+  try {
+    const raw = localStorage.getItem('bizrise_user');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    localStorage.removeItem('bizrise_user');
+    return null;
+  }
 }
 
 function isAuthenticated() {
@@ -100,4 +105,74 @@ function setBizImage(imgEl, apiUrl, seed) {
 // Helper para template literals: `${imgSrc(apiUrl, seed)}`
 function imgSrc(apiUrl, seed) {
   return apiUrl || bizFallbackImg(seed);
+}
+
+// ─── NOTIFICACIONES ────────────────────────────────────────────────────────
+
+function timeAgo(dateStr) {
+  if (!dateStr) return '';
+  const now = new Date();
+  const date = new Date(dateStr);
+  const seconds = Math.floor((now - date) / 1000);
+  if (seconds < 60) return 'ahora';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `hace ${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `hace ${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `hace ${days}d`;
+  return date.toLocaleDateString('es-PE', { day: 'numeric', month: 'short' });
+}
+
+function notifIcon(tipo) {
+  const icons = {
+    'pendiente': 'bi-shop text-warning',
+    'nuevo_usuario': 'bi-person-plus text-primary',
+    'promocion_vencida': 'bi-megaphone text-danger',
+  };
+  return icons[tipo] || 'bi-bell text-muted';
+}
+
+async function initNotifications() {
+  const badge = document.getElementById('notif-badge');
+  const list = document.getElementById('notif-list');
+  if (!list) return;
+
+  try {
+    const data = await apiGet('/admin/notifications');
+    const pendientes = data.filter(n => n.tipo === 'pendiente').length;
+
+    if (badge) {
+      if (pendientes > 0) {
+        badge.textContent = pendientes;
+        badge.classList.remove('d-none');
+      } else {
+        badge.classList.add('d-none');
+      }
+    }
+
+    if (data.length === 0) {
+      list.innerHTML = '<div class="dropdown-item text-muted small text-center py-3">No hay notificaciones nuevas</div>';
+      return;
+    }
+
+    list.innerHTML = data.slice(0, 10).map(n => `
+      <div class="dropdown-item d-flex gap-2 align-items-start py-2">
+        <i class="bi ${notifIcon(n.tipo)} mt-1"></i>
+        <div class="min-w-0">
+          <div class="small fw-semibold text-truncate">${escHtml(n.titulo)}</div>
+          <div class="small text-muted">${escHtml(n.descripcion)} &mdash; ${timeAgo(n.fecha)}</div>
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    list.innerHTML = '<div class="dropdown-item text-muted small text-center py-3">Error al cargar notificaciones</div>';
+  }
+}
+
+function escHtml(str) {
+  if (!str) return '';
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
 }

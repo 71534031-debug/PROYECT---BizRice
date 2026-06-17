@@ -37,14 +37,21 @@ export class ToastService {
     };
     toast.className = `toast show align-items-center border-0 ${bgClass[type]}`;
     toast.role = 'alert';
-    toast.innerHTML = `
-      <div class="d-flex">
-        <div class="toast-body d-flex align-items-center gap-2">
-          <i class="bi ${iconMap[type]}"></i>
-          <span>${message}</span>
-        </div>
-        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-      </div>`;
+    const span = document.createElement('span');
+    span.textContent = message;
+    const body = document.createElement('div');
+    body.className = 'toast-body d-flex align-items-center gap-2';
+    body.innerHTML = `<i class="bi ${iconMap[type]}"></i>`;
+    body.appendChild(span);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn-close btn-close-white me-2 m-auto';
+    btn.setAttribute('data-bs-dismiss', 'toast');
+    const dflex = document.createElement('div');
+    dflex.className = 'd-flex';
+    dflex.appendChild(body);
+    dflex.appendChild(btn);
+    toast.appendChild(dflex);
     container.appendChild(toast);
     setTimeout(() => { toast.remove(); }, duration);
   }

@@ -51,11 +51,11 @@ async function cargarCategorias() {
       const count = cat.total_negocios || cat.business_count || 0;
       link.innerHTML = `
         <div class="category-card-img">
-          <img src="${imgUrl}" alt="${cat.nombre}" loading="lazy">
+          <img src="${imgUrl}" alt="${escHtml(cat.nombre)}" loading="lazy">
           <div class="overlay"></div>
         </div>
-        <span>${cat.nombre}</span>
-        ${count > 0 ? `<small class="text-muted d-block text-center">${count} negocios</small>` : ''}
+        <span>${escHtml(cat.nombre)}</span>
+        ${count > 0 ? `<small class="text-muted d-block text-center">${escHtml(count)} negocios</small>` : ''}
       `;
       col.appendChild(link);
       grid.appendChild(col);
@@ -96,22 +96,22 @@ async function cargarNegocios() {
 
       card.innerHTML = `
         <div class="card-img-wrap">
-          <img src="${imgSrc(negocio.imagen_portada_url, negocio.nombre)}" alt="${negocio.nombre}" loading="lazy">
+          <img src="${imgSrc(negocio.imagen_portada_url, negocio.nombre)}" alt="${escHtml(negocio.nombre)}" loading="lazy">
           <div class="rating-badge">
             <i class="bi bi-star-fill"></i>
-            <span>${ratingDisplay}</span>
+            <span>${escHtml(ratingDisplay)}</span>
           </div>
         </div>
         <div class="card-body d-flex flex-column">
           <div class="d-flex justify-content-between align-items-start mb-2">
-            <h5 class="card-title">${negocio.nombre}</h5>
+            <h5 class="card-title">${escHtml(negocio.nombre)}</h5>
             <span class="verified-tag">
               <i class="bi bi-patch-check-fill me-1" style="font-size:0.55rem"></i>Verificado
             </span>
           </div>
-          <p class="card-text mb-3">${truncate(negocio.descripcion, 90)}</p>
+          <p class="card-text mb-3">${escHtml(truncate(negocio.descripcion, 90))}</p>
           <div class="info-row mb-3">
-            <span><i class="bi bi-geo-alt"></i> ${negocio.distrito || 'Huancayo'}</span>
+            <span><i class="bi bi-geo-alt"></i> ${escHtml(negocio.distrito || 'Huancayo')}</span>
             <span><i class="bi bi-clock"></i> ${negocio.esta_abierto ? 'Abierto' : 'Cerrado'}</span>
           </div>
           <div class="mt-auto">

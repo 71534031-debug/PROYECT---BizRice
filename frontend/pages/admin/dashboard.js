@@ -26,11 +26,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     await confirmarRechazo(modal);
   });
 
+  document.getElementById('motivo-rechazo').addEventListener('input', function () {
+    const counter = document.getElementById('motivo-counter');
+    if (counter) counter.textContent = `${this.value.length}/20 caracteres`;
+  });
+
   document.getElementById('btn-tutoriales').addEventListener('click', (e) => {
     showToast('Función de tutoriales próximamente disponible', 'info');
   });
 
-  await cargarStats();
+  document.getElementById('search-top').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      window.location.href = '/pages/admin/requests.html?busqueda=' + encodeURIComponent(e.target.value);
+    }
+  });
+
+  await Promise.all([
+    cargarStats(),
+    cargarTopProductos(),
+  ]);
+  initNotifications();
+  if (window.updateSidebarBadge) window.updateSidebarBadge();
 });
 
 async function cargarStats() {
@@ -61,28 +77,46 @@ async function cargarStats() {
     document.getElementById('total-ventas').textContent = metrics.ventas_entregadas ?? 0;
     document.getElementById('ingresos-totales').textContent = formatPrice(metrics.ingresos_totales || 0) + ' ingresos';
 
-    if (metrics.productos_mas_vendidos && metrics.productos_mas_vendidos.length > 0) {
-      renderTopProductos(metrics.productos_mas_vendidos);
-    }
+    // productos_mas_vendidos ahora se carga via cargarTopProductos()
   } catch (e) {
     showToast('Error al cargar estadísticas', 'danger');
   }
 }
 
+async function cargarTopProductos() {
+  const container = document.getElementById('top-productos-body');
+  try {
+    const items = await apiGet('/admin/top-products');
+    if (items && items.length > 0) {
+      renderTopProductos(items);
+    } else {
+      container.innerHTML = '<p class="text-muted small text-center py-4 mb-0">Aún no hay productos registrados</p>';
+    }
+  } catch (e) {
+    container.innerHTML = '<p class="text-muted small text-center py-4 mb-0">Error al cargar productos</p>';
+  }
+}
+
 function renderTopProductos(items) {
   const container = document.getElementById('top-productos-body');
+  const stars = (n) => {
+    const full = Math.round(n);
+    return '&#9733;'.repeat(full) + '&#9734;'.repeat(5 - full);
+  };
   container.innerHTML = '<div class="list-group list-group-flush">' +
     items.map((p, i) => {
-      const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1);
+      const medal = i === 0 ? '1' : i === 1 ? '2' : i === 2 ? '3' : (i + 1);
+      const medalCls = ['text-warning', 'text-secondary', 'text-muted', 'text-muted'][i] || 'text-muted';
       return '<div class="list-group-item px-4 py-3 d-flex align-items-center gap-3 border-0 border-bottom">' +
-        '<span class="fw-bold text-muted" style="width:24px">' + medal + '</span>' +
-        '<div class="flex-grow-1">' +
-          '<div class="fw-semibold small">' + p.nombre + '</div>' +
-          '<small class="text-muted">' + p.negocio + '</small>' +
+        '<span class="fw-bold ' + medalCls + '" style="width:20px;font-size:1.1rem">#' + medal + '</span>' +
+        '<img src="' + escHtml(p.imagen_url || 'https://picsum.photos/seed/' + p.id_producto + '/48/48') + '" alt="" class="rounded" width="40" height="40" style="object-fit:cover" onerror="this.style.display=\'none\'">' +
+        '<div class="flex-grow-1 min-w-0">' +
+          '<div class="fw-semibold small text-truncate">' + escHtml(p.nombre) + '</div>' +
+          '<small class="text-muted text-truncate d-block">' + escHtml(p.negocio) + '</small>' +
         '</div>' +
-        '<div class="text-end">' +
-          '<div class="fw-bold small" style="color:var(--bizrise-primary)">' + p.total_vendido + ' vend.</div>' +
-          '<small class="text-muted">' + formatPrice(p.ingresos) + '</small>' +
+        '<div class="text-end" style="min-width:70px">' +
+          '<div class="small lh-1">' + stars(p.puntuacion) + '</div>' +
+          '<small class="text-muted" style="font-size:0.7rem">' + p.puntuacion.toFixed(1) + ' (' + p.total_votos + ')</small>' +
         '</div>' +
       '</div>';
     }).join('') +
@@ -109,7 +143,13 @@ function renderPendientes(lista) {
   }).join('');
 }
 
-async function aprobarSolicitud(id) {
+function aprobarSolicitud(id) {
+  if (confirm('¿Estás seguro de aprobar este negocio?')) {
+    confirmarAprobacion(id);
+  }
+}
+
+async function confirmarAprobacion(id) {
   try {
     await apiPut(`/admin/businesses/${id}/approve`);
     showToast('Negocio aprobado exitosamente', 'success');
@@ -129,7 +169,7 @@ function abrirRechazo(id) {
 
 async function confirmarRechazo(modal) {
   const motivo = document.getElementById('motivo-rechazo').value.trim();
-  if (!motivo) {
+  if (!motivo || motivo.length < 20) {
     document.getElementById('motivo-rechazo').classList.add('is-invalid');
     return;
   }

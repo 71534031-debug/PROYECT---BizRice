@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, signal, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, OnDestroy, signal, inject } from '@angular/core';
 import { FormControl, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
@@ -6,6 +6,7 @@ import { BusinessService } from '../services/business.service';
 import { CategoryService } from '../services/category.service';
 
 @Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-directory',
   standalone: true,
   imports: [ReactiveFormsModule, FormsModule, RouterLink],
@@ -110,7 +111,7 @@ import { CategoryService } from '../services/category.service';
               <div class="col-md-6 col-xl-4 fade-in">
                 <div class="card h-100 shadow-sm business-card">
                   @if (biz.imagen_portada_url) {
-                    <img [src]="biz.imagen_portada_url" class="card-img-top" style="height:140px;object-fit:cover" [alt]="biz.nombre">
+                    <img [src]="biz.imagen_portada_url" class="card-img-top" style="height:140px;object-fit:cover" [alt]="biz.nombre" [attr.loading]="'lazy'">
                   } @else {
                     <div class="img-placeholder" style="height:140px"><i class="bi bi-shop"></i></div>
                   }
@@ -263,11 +264,16 @@ export class DirectoryComponent implements OnInit, OnDestroy {
     this.businessService.loadBusinesses(cleanParams as any).subscribe();
   }
 
+  private escapeHtml(s: string): string {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  }
+
   highlightText(text: string): string {
     const term = this.currentParams['busqueda'] || this.searchControl.value || '';
-    if (!term.trim()) return text;
+    const safe = this.escapeHtml(text);
+    if (!term.trim()) return safe;
     const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const regex = new RegExp(`(${escaped})`, 'gi');
-    return text.replace(regex, '<span class="search-highlight">$1</span>');
+    return safe.replace(regex, '<span class="search-highlight">$1</span>');
   }
 }

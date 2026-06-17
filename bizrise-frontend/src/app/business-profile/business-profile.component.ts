@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, signal, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, OnDestroy, signal, inject } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
@@ -7,6 +7,7 @@ import { AuthService } from '../services/auth.service';
 import { ToastService } from '../services/toast.service';
 
 @Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-business-profile',
   standalone: true,
   imports: [RouterLink, FormsModule],
@@ -34,7 +35,7 @@ import { ToastService } from '../services/toast.service';
     @if (biz(); as b) {
       <div class="hero-profile position-relative" style="height:300px;overflow:hidden">
         @if (b.imagen_portada_url) {
-          <img [src]="b.imagen_portada_url" class="w-100 h-100 object-cover" [alt]="b.nombre">
+          <img [src]="b.imagen_portada_url" class="w-100 h-100 object-cover" [alt]="b.nombre" [attr.loading]="'lazy'">
         } @else {
           <div class="img-placeholder w-100 h-100 d-flex align-items-center justify-content-center"><i class="bi bi-shop fs-1"></i></div>
         }
@@ -85,7 +86,7 @@ import { ToastService } from '../services/toast.service';
                     <div class="col-6 col-md-4">
                       <div class="card border-0 shadow-sm h-100">
                         @if (p.imagen_url) {
-                          <img [src]="p.imagen_url" class="card-img-top product-img" [alt]="p.nombre" style="height:120px;object-fit:cover">
+                          <img [src]="p.imagen_url" class="card-img-top product-img" [alt]="p.nombre" style="height:120px;object-fit:cover" [attr.loading]="'lazy'">
                         } @else {
                           <div class="img-placeholder" style="height:120px"><i class="bi bi-box"></i></div>
                         }

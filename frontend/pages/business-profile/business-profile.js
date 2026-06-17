@@ -59,9 +59,11 @@ async function cargarPerfil() {
     const telefono = negocio.telefono;
     if (telefono) {
       const limpio = telefono.replace(/[^0-9]/g, '');
-      document.getElementById('telefono-link').href = `https://wa.me/51${limpio}`;
+      document.getElementById('telefono-link').href = `https://wa.me/${limpio.startsWith('51') ? '' : '51'}${limpio}`;
+      document.getElementById('telefono-link').target = '_blank';
+      document.getElementById('telefono-link').rel = 'noopener noreferrer';
       document.getElementById('telefono-info').innerHTML = `
-        <small class="text-muted"><i class="bi bi-telephone"></i> ${telefono}</small>
+        <a href="tel:${limpio}" class="text-decoration-none"><small class="text-muted"><i class="bi bi-telephone"></i> ${escHtml(telefono)}</small></a>
       `;
     }
 
@@ -87,7 +89,7 @@ async function cargarPerfil() {
         else if (red.plataforma === 'whatsapp') icono = 'bi-whatsapp';
         else if (red.plataforma === 'tiktok') icono = 'bi-tiktok';
         redesContainer.innerHTML += `
-          <a href="${red.url}" target="_blank" class="btn btn-outline-secondary btn-sm" title="${red.plataforma}">
+          <a href="${escHtml(red.url)}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-secondary btn-sm" title="${escHtml(red.plataforma)}">
             <i class="bi ${icono}"></i>
           </a>
         `;
@@ -156,15 +158,15 @@ async function cargarProductos() {
       col.innerHTML = `
         <div class="product-card card h-100">
           <img src="${imgSrc(p.imagen_url, p.nombre)}"
-               class="product-img" alt="${p.nombre}"
-               onerror="this.src=bizFallbackImg('${p.nombre}', 400, 300)">
+               class="product-img" alt="${escHtml(p.nombre)}"
+               onerror="this.src=bizFallbackImg('${escHtml(p.nombre)}', 400, 300)">
           <div class="card-body">
-            <span class="badge ${stockClass} mb-1">${stockLabel}</span>
-            <h6 class="card-title mb-1">${p.nombre}</h6>
-            <p class="card-text text-muted small mb-1">${truncate(p.descripcion, 60)}</p>
+            <span class="badge ${stockClass} mb-1">${escHtml(stockLabel)}</span>
+            <h6 class="card-title mb-1">${escHtml(p.nombre)}</h6>
+            <p class="card-text text-muted small mb-1">${escHtml(truncate(p.descripcion, 60))}</p>
             <div class="d-flex align-items-center justify-content-between">
-              <div class="precio">${formatPrice(p.precio)}</div>
-              <small class="text-muted"><i class="bi bi-box"></i> ${stockNum} uds.</small>
+              <div class="precio">${escHtml(formatPrice(p.precio))}</div>
+              <small class="text-muted"><i class="bi bi-box"></i> ${escHtml(stockNum)} uds.</small>
             </div>
           </div>
         </div>
@@ -230,17 +232,17 @@ function renderizarResenas(items) {
       <div class="d-flex align-items-center gap-2 mb-1">
         <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center"
              style="width: 36px; height: 36px; min-width: 36px;">
-          <span class="text-white small fw-bold">${r.usuario.nombre.charAt(0)}${r.usuario.apellido.charAt(0)}</span>
+          <span class="text-white small fw-bold">${escHtml(r.usuario.nombre.charAt(0))}${escHtml(r.usuario.apellido.charAt(0))}</span>
         </div>
         <div>
-          <strong style="font-size:0.9rem">${r.usuario.nombre} ${r.usuario.apellido}</strong>
+          <strong style="font-size:0.9rem">${escHtml(r.usuario.nombre)} ${escHtml(r.usuario.apellido)}</strong>
           <div class="d-flex align-items-center gap-1">
             <span class="stars">${renderStars(r.puntuacion)}</span>
-            <small class="text-muted">${new Date(r.fecha).toLocaleDateString('es-PE')}</small>
+            <small class="text-muted">${escHtml(new Date(r.fecha).toLocaleDateString('es-PE'))}</small>
           </div>
         </div>
       </div>
-      <p class="mb-0 text-muted small" style="padding-left: 44px;">${r.contenido}</p>
+      <p class="mb-0 text-muted small" style="padding-left: 44px;">${escHtml(r.contenido)}</p>
     </div>
   `).join('');
 }
@@ -291,6 +293,10 @@ function configurarFormularioResena() {
       return;
     }
 
+    const submitBtn = newForm.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Publicando...';
+
     try {
       await apiPost(`/businesses/${businessId}/reviews`, {
         puntuacion: selectedRating,
@@ -306,6 +312,9 @@ function configurarFormularioResena() {
       await cargarResenas();
     } catch (e) {
       showToast(e.message || 'Error al publicar reseña', 'danger');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<i class="bi bi-send"></i> Publicar Reseña';
     }
   });
 }

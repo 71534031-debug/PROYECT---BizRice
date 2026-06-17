@@ -1,10 +1,11 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CategoryService } from '../services/category.service';
 import { BusinessService } from '../services/business.service';
 
 @Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-home',
   standalone: true,
   imports: [RouterLink, FormsModule],
@@ -25,7 +26,7 @@ import { BusinessService } from '../services/business.service';
                 </div>
                 <div class="col-md-auto d-flex align-items-center px-3 py-2">
                   <i class="bi bi-geo-alt text-primary me-3 fs-5"></i>
-                  <select class="form-select border-0 shadow-none bg-transparent px-0" [(ngModel)]="distrito">
+                  <select class="form-select border-0 shadow-none" style="background-color:transparent;background-image:none;padding-left:0;padding-right:1.75rem;min-width:155px" [(ngModel)]="distrito">
                     <option value="">Todo Huancayo</option>
                     <option value="Huancayo">Huancayo</option>
                     <option value="El Tambo">El Tambo</option>
@@ -158,7 +159,7 @@ import { BusinessService } from '../services/business.service';
                 <a [routerLink]="'/business/' + biz.id_emprendimiento" class="text-decoration-none">
                   <div class="card card-hover shadow-sm h-100">
                     @if (biz.imagen_portada_url) {
-                      <img [src]="biz.imagen_portada_url" class="card-img-top" style="height:160px;object-fit:cover" [alt]="biz.nombre">
+                      <img [src]="biz.imagen_portada_url" class="card-img-top" style="height:160px;object-fit:cover" [alt]="biz.nombre" [attr.loading]="'lazy'">
                     } @else {
                       <div class="img-placeholder" style="height:160px"><i class="bi bi-shop fs-1"></i></div>
                     }

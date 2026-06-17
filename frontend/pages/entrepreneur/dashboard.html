@@ -33,6 +33,11 @@
               <div id="actividad-lista">
                 <p class="text-muted small mb-0">Cargando...</p>
               </div>
+              <div class="text-center mt-2 d-none" id="actividad-footer">
+                <a class="btn btn-link btn-sm text-decoration-none" href="/pages/entrepreneur/my-business.html">
+                  Ver todo el historial <i class="bi bi-arrow-right"></i>
+                </a>
+              </div>
             </div>
           </div>
         </div>
@@ -42,17 +47,33 @@
             <div class="card-body text-white text-center">
               <h6 class="fw-bold mb-2"><i class="bi bi-rocket-takeoff"></i> ¿Listo para expandir tu alcance?</h6>
               <p class="small opacity-75 mb-3">Llega a más clientes en Huancayo</p>
-              <button class="btn btn-light btn-sm w-100 mb-2" disabled>
+              <button class="btn btn-light btn-sm w-100 mb-2" onclick="irAPromociones()">
                 <i class="bi bi-megaphone"></i> Crear Campaña
               </button>
-              <a href="/pages/directory/directory.html" class="btn btn-outline-light btn-sm w-100">
-                <i class="bi bi-search"></i> Explorar Directorio
-              </a>
+              <button class="btn btn-outline-light btn-sm w-100" onclick="irAMiNegocio()">
+                <i class="bi bi-building"></i> Mi Negocio
+              </button>
             </div>
           </div>
         </div>
       </div>
     </main>
+  </div>
+
+  <!-- Premium Modal -->
+  <div class="modal fade" id="modal-premium" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-body text-center py-5">
+          <i class="bi bi-stars" style="font-size:3rem;color:var(--bizrise-primary)"></i>
+          <h5 class="fw-bold mt-3">Función premium</h5>
+          <p class="text-muted small mb-0">Disponible próximamente</p>
+        </div>
+        <div class="modal-footer border-0 justify-content-center pt-0">
+          <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

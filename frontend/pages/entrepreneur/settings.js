@@ -27,10 +27,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   cargarPreferenciasNotif();
 });
 
-function cargarPreferenciasNotif() {
-  const prefs = JSON.parse(localStorage.getItem('bizrise_notif_prefs') || '{}');
-  if (prefs.email !== undefined) document.getElementById('notif-email').checked = prefs.email;
-  if (prefs.whatsapp !== undefined) document.getElementById('notif-whatsapp').checked = prefs.whatsapp;
+async function cargarPreferenciasNotif() {
+  try {
+    const prefs = await apiGet('/entrepreneur/settings/notifications');
+    if (prefs.email_notificaciones !== undefined) document.getElementById('notif-email').checked = prefs.email_notificaciones;
+    if (prefs.whatsapp_notificaciones !== undefined) document.getElementById('notif-whatsapp').checked = prefs.whatsapp_notificaciones;
+  } catch (e) {
+    // non-critical
+  }
 }
 
 function validarCoincidencia() {

@@ -82,7 +82,14 @@ async function cargarMiNegocio() {
     setBizImage(document.getElementById('portada-preview'), data.imagen_portada_url, data.nombre);
     setBizImage(document.getElementById('preview-thumb'), data.imagen_portada_url, data.nombre);
 
-    if (data.horario_apertura && data.horario_cierre) {
+    if (data.horarios) {
+      data.horarios.forEach(h => {
+        const dia = h.dia.charAt(0).toUpperCase() + h.dia.slice(1);
+        document.querySelector(`.horario-check[data-dia="${dia}"]`).checked = h.abierto;
+        if (h.apertura) document.querySelector(`.horario-apertura[data-dia="${dia}"]`).value = h.apertura.slice(0, 5);
+        if (h.cierre) document.querySelector(`.horario-cierre[data-dia="${dia}"]`).value = h.cierre.slice(0, 5);
+      });
+    } else if (data.horario_apertura && data.horario_cierre) {
       document.querySelectorAll('.horario-apertura').forEach(inp => inp.value = data.horario_apertura.slice(0, 5));
       document.querySelectorAll('.horario-cierre').forEach(inp => inp.value = data.horario_cierre.slice(0, 5));
     }
@@ -115,6 +122,10 @@ async function guardarNegocio(e) {
     return;
   }
 
+  const btn = document.getElementById('btn-save-business');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Guardando...';
+
   try {
     if (businessData) {
       await apiPut('/entrepreneur/business', payload);
@@ -126,6 +137,9 @@ async function guardarNegocio(e) {
     }
   } catch (e) {
     showToast(e.message || 'Error al guardar', 'danger');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-check-lg"></i> Guardar Cambios';
   }
 }
 
@@ -137,11 +151,18 @@ async function guardarHorarios() {
     cierre: document.querySelector(`.horario-cierre[data-dia="${dia}"]`).value
   }));
 
+  const btn = document.getElementById('btn-save-schedule');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Guardando...';
+
   try {
     await apiPut('/entrepreneur/business/schedule', { horarios });
     showToast('Horarios actualizados correctamente', 'success');
   } catch (e) {
     showToast(e.message || 'Error al guardar horarios', 'danger');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-check-lg"></i> Guardar Horarios';
   }
 }
 

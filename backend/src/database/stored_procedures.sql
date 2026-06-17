@@ -940,5 +940,98 @@ BEGIN
 END;
 GO
 
+-- ============================================================================
+-- NOTIFICACIONES
+-- ============================================================================
+
+-- Obtener notificaciones recientes para el panel admin
+CREATE OR ALTER PROCEDURE sp_GetAdminNotifications
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Emprendimientos pendientes de aprobación
+    SELECT
+        'pendiente' AS tipo,
+        e.id_emprendimiento AS id_ref,
+        e.nombre AS titulo,
+        u.nombre + ' ' + u.apellido AS descripcion,
+        e.fecha_registro AS fecha
+    FROM Emprendimientos e
+    INNER JOIN Usuarios u ON e.id_usuario = u.id_usuario
+    WHERE e.estado_verificacion = 'pendiente'
+
+    UNION ALL
+
+    -- Usuarios registrados hoy
+    SELECT
+        'nuevo_usuario' AS tipo,
+        u.id_usuario AS id_ref,
+        u.nombre + ' ' + u.apellido AS titulo,
+        'Nuevo usuario registrado' AS descripcion,
+        u.fecha_registro AS fecha
+    FROM Usuarios u
+    WHERE CAST(u.fecha_registro AS DATE) = CAST(GETDATE() AS DATE)
+
+    UNION ALL
+
+    -- Promociones vencidas
+    SELECT
+        'promocion_vencida' AS tipo,
+        p.id_promocion AS id_ref,
+        p.titulo AS titulo,
+        e.nombre AS descripcion,
+        p.fecha_fin AS fecha
+    FROM Promociones p
+    INNER JOIN Emprendimientos e ON p.id_emprendimiento = e.id_emprendimiento
+    WHERE p.fecha_fin < GETDATE() AND p.estado = 'activa'
+
+    ORDER BY fecha DESC;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE sp_GetTopProducts
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT TOP 5
+        p.id_producto,
+        p.nombre,
+        p.precio,
+        p.imagen_url,
+        e.nombre AS negocio,
+        e.imagen_portada_url,
+        ISNULL(AVG(CAST(v.puntuacion AS FLOAT)), 0) AS puntuacion,
+        COUNT(v.id_valoracion) AS total_votos
+    FROM Productos p
+    INNER JOIN Emprendimientos e ON e.id_emprendimiento = p.id_emprendimiento
+    LEFT JOIN Valoraciones v ON v.id_emprendimiento = e.id_emprendimiento
+    WHERE p.activo = 1 AND e.estado_verificacion = 'aprobado'
+    GROUP BY p.id_producto, p.nombre, p.precio, p.imagen_url,
+             e.nombre, e.imagen_portada_url
+    ORDER BY puntuacion DESC, total_votos DESC;
+END;
+GO
+
+GO
+
+CREATE OR ALTER PROCEDURE sp_UpdateUserProfile
+    @id_usuario INT,
+    @nombre VARCHAR(100) = NULL,
+    @apellido VARCHAR(100) = NULL,
+    @correo VARCHAR(150) = NULL,
+    @avatar_url VARCHAR(255) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE Usuarios SET
+        nombre = COALESCE(@nombre, nombre),
+        apellido = COALESCE(@apellido, apellido),
+        correo = COALESCE(@correo, correo),
+        avatar_url = COALESCE(@avatar_url, avatar_url)
+    WHERE id_usuario = @id_usuario;
+END;
+GO
+
 PRINT '>> Todos los procedimientos almacenados de BizRise se crearon correctamente.';
 GO

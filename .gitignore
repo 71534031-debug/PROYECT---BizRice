@@ -14,6 +14,15 @@ backend/*.log
 backend/error.txt
 backend/output.txt
 backend/.env
+backend/.env.production
+backend/uploads/
+backend/uvicorn_err.log
+backend/uvicorn_out.log
+backend/backend.log
+backend/backend.err
+
+# Frontend legacy (bootstrap CDN)
+frontend/node_modules/
 
 # IDE
 .vscode/

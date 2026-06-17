@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await cargarCategoriasFiltro();
   leerParamsURL();
+  resaltarCategoriaActiva();
   configurarEventos();
   await cargarNegocios();
 });
@@ -112,7 +113,7 @@ async function cargarCategoriasFiltro() {
       const item = document.createElement('a');
       item.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
       item.dataset.id = cat.id_categoria;
-      item.innerHTML = `${cat.nombre} <span class="badge bg-primary rounded-pill">${cat.total_negocios}</span>`;
+      item.innerHTML = `${escHtml(cat.nombre)} <span class="badge bg-primary rounded-pill">${escHtml(cat.total_negocios)}</span>`;
       item.addEventListener('click', () => seleccionarCategoria(cat.id_categoria));
       container.appendChild(item);
     });
@@ -173,19 +174,19 @@ function renderizarNegocios(data) {
     col.innerHTML = `
       <div class="card business-card shadow-sm">
         <img src="${imgSrc(negocio.imagen_portada_url, negocio.nombre)}"
-             class="card-img-top" alt="${negocio.nombre}">
+             class="card-img-top" alt="${escHtml(negocio.nombre)}">
         <div class="card-body d-flex flex-column">
-          <span class="badge bg-primary mb-2 align-self-start">${negocio.categoria}</span>
-          <h5 class="card-title">${negocio.nombre}</h5>
-          <p class="card-text text-muted flex-grow-1">${truncate(negocio.descripcion, 80)}</p>
+          <span class="badge bg-primary mb-2 align-self-start">${escHtml(negocio.categoria)}</span>
+          <h5 class="card-title">${escHtml(negocio.nombre)}</h5>
+          <p class="card-text text-muted flex-grow-1">${escHtml(truncate(negocio.descripcion, 80))}</p>
           <div class="d-flex align-items-center gap-2 mb-2">
             <div class="stars">${renderStars(negocio.puntuacion_promedio)}</div>
-            <span class="fw-semibold" style="font-size:0.9rem">${negocio.puntuacion_promedio}</span>
-            <span class="text-muted small">(${negocio.total_valoraciones})</span>
+            <span class="fw-semibold" style="font-size:0.9rem">${escHtml(negocio.puntuacion_promedio)}</span>
+            <span class="text-muted small">(${escHtml(negocio.total_valoraciones)})</span>
           </div>
           <div class="d-flex justify-content-between align-items-center">
             <small class="text-muted">
-              <i class="bi bi-geo-alt"></i> ${negocio.distrito || 'Huancayo'}
+              <i class="bi bi-geo-alt"></i> ${escHtml(negocio.distrito || 'Huancayo')}
             </small>
             <small class="${negocio.esta_abierto ? 'text-success' : 'text-danger'} fw-semibold">
               <i class="bi ${negocio.esta_abierto ? 'bi-check-circle' : 'bi-x-circle'}"></i>
@@ -229,11 +230,11 @@ function renderizarPaginacion(data) {
   };
 
   addItem('«', currentPage - 1, currentPage === 1);
-  addItem(currentPage, currentPage, false, true);
 
-  for (let p = currentPage - 2; p <= currentPage + 2; p++) {
-    if (p < 1 || p > totalPages || p === currentPage) continue;
-    addItem(p, p);
+  const start = Math.max(1, Math.min(currentPage - 2, totalPages - 4));
+  const end = Math.min(totalPages, start + 4);
+  for (let p = start; p <= end; p++) {
+    addItem(p, p, false, p === currentPage);
   }
 
   addItem('»', currentPage + 1, currentPage === totalPages);
@@ -243,6 +244,9 @@ window.addEventListener('popstate', () => {
   currentFilters = {};
   currentPage = 1;
   leerParamsURL();
-  resaltarCategoriaActiva();
+  document.getElementById('filter-categorias').querySelectorAll('.list-group-item').forEach(el => {
+    const id = parseInt(el.dataset.id);
+    el.classList.toggle('active', id === currentFilters.categoria);
+  });
   cargarNegocios();
 });

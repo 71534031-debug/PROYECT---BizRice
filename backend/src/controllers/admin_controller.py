@@ -36,6 +36,14 @@ class StatsResponse(BaseModel):
     crecimiento_mensual: list[CrecimientoMensual]
 
 
+class NotificacionItem(BaseModel):
+    tipo: str
+    id_ref: int
+    titulo: str
+    descripcion: str
+    fecha: datetime
+
+
 class PropietarioInfo(BaseModel):
     nombre: str
     apellido: str
@@ -135,6 +143,17 @@ class TopProductoItem(BaseModel):
     negocio: str
     total_vendido: int
     ingresos: float
+
+
+class TopProductoRating(BaseModel):
+    id_producto: int
+    nombre: str
+    precio: float
+    imagen_url: Optional[str] = None
+    negocio: str
+    imagen_portada_url: Optional[str] = None
+    puntuacion: float
+    total_votos: int
 
 
 class VentaMesItem(BaseModel):
@@ -248,6 +267,47 @@ def obtener_metricas_dashboard(
         ventas_por_mes=[],
         productos_mas_vendidos=[],
     )
+
+
+@router.get("/top-products", response_model=list[TopProductoRating])
+def obtener_top_productos(
+    current_user=Depends(require_role("administrador")),
+    conn=Depends(get_db_conn),
+):
+    repo = BaseRepository(conn)
+    rows = repo.execute_sp("sp_GetTopProducts")
+    return [
+        TopProductoRating(
+            id_producto=r["id_producto"],
+            nombre=r["nombre"],
+            precio=float(r.get("precio", 0)),
+            imagen_url=r.get("imagen_url"),
+            negocio=r["negocio"],
+            imagen_portada_url=r.get("imagen_portada_url"),
+            puntuacion=round(float(r.get("puntuacion", 0)), 1),
+            total_votos=int(r.get("total_votos", 0)),
+        )
+        for r in rows
+    ]
+
+
+@router.get("/notifications", response_model=list[NotificacionItem])
+def obtener_notificaciones(
+    current_user=Depends(require_role("administrador")),
+    conn=Depends(get_db_conn),
+):
+    repo = BaseRepository(conn)
+    rows = repo.execute_sp("sp_GetAdminNotifications")
+    return [
+        NotificacionItem(
+            tipo=r["tipo"],
+            id_ref=r["id_ref"],
+            titulo=r["titulo"],
+            descripcion=r["descripcion"],
+            fecha=r["fecha"],
+        )
+        for r in rows
+    ]
 
 
 @router.get("/businesses", response_model=BusinessListResponse)

@@ -6,9 +6,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  const btnLogout = document.getElementById('btn-logout-admin');
-  if (btnLogout) btnLogout.addEventListener('click', handleLogout);
-
   if (document.getElementById('pendientes-badge')) {
     fetchStatsBadge();
   }
@@ -18,11 +15,17 @@ async function fetchStatsBadge() {
   try {
     const data = await apiGet('/admin/stats');
     const badge = document.getElementById('pendientes-badge');
-    if (badge && data.pendientes > 0) {
-      badge.textContent = data.pendientes;
-      badge.classList.remove('d-none');
+    if (badge) {
+      if (data.pendientes > 0) {
+        badge.textContent = data.pendientes;
+        badge.classList.remove('d-none');
+      } else {
+        badge.classList.add('d-none');
+      }
     }
   } catch (e) {
     // sidebar badge is non-critical
   }
 }
+
+window.updateSidebarBadge = fetchStatsBadge;

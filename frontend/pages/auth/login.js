@@ -28,7 +28,7 @@ async function handleLogin(e) {
 
   let valid = true;
 
-  if (!correo || !correo.includes('@')) {
+  if (!correo || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
     document.getElementById('login-correo').classList.add('is-invalid');
     valid = false;
   } else {

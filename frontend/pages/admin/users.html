@@ -27,13 +27,21 @@
                  aria-label="Buscar">
         </div>
         <div class="d-flex align-items-center gap-3">
-          <div class="d-flex align-items-center gap-2">
-            <button class="btn-notification-icon" id="btn-notifications" aria-label="Notificaciones">
+          <div class="dropdown d-flex align-items-center gap-2">
+            <button class="btn-notification-icon" id="btn-notifications" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notificaciones">
               <i class="bi bi-bell"></i>
-              <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger rounded-circle">
-                <span class="visually-hidden">Nuevas notificaciones</span>
-              </span>
+              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" id="notif-badge">0</span>
             </button>
+            <div class="dropdown-menu dropdown-menu-end shadow-sm border-0 notif-dropdown" id="notif-dropdown" aria-labelledby="btn-notifications">
+              <div class="dropdown-header fw-semibold small text-uppercase text-muted">Notificaciones</div>
+              <div class="notif-list" id="notif-list">
+                <div class="dropdown-item text-muted small text-center py-3" id="notif-loading">Cargando...</div>
+              </div>
+              <div class="dropdown-divider m-0"></div>
+              <a class="dropdown-item text-center small py-2 text-primary fw-semibold" href="/pages/admin/requests.html">
+                Ver todas
+              </a>
+            </div>
           </div>
           <div class="vr"></div>
           <div class="d-flex align-items-center gap-3">

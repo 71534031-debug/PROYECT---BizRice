@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, Depends, HTTPException, Header, Request
 from pydantic import BaseModel, EmailStr, field_validator
 from datetime import datetime, timedelta, timezone
 from jose import JWTError, jwt
@@ -7,6 +7,7 @@ import re
 
 from src.config.db import get_db_conn
 from src.config.settings import settings
+from src.config.limiter import limiter
 from src.repositories.user_repository import UserRepository
 
 router = APIRouter()
@@ -76,7 +77,8 @@ def require_role(role: str):
 
 
 @router.post("/register", status_code=201)
-def register(data: RegisterSchema, conn=Depends(get_db_conn)):
+@limiter.limit("3/minute")
+def register(request: Request, data: RegisterSchema, conn=Depends(get_db_conn)):
     if data.contrasena != data.confirmar_contrasena:
         raise HTTPException(400, "Las contraseñas no coinciden")
 
@@ -92,11 +94,13 @@ def register(data: RegisterSchema, conn=Depends(get_db_conn)):
         "contrasena_hash": pwd_context.hash(data.contrasena),
         "rol": "emprendedor",
     })
+    conn.commit()
     return _token_response(user)
 
 
 @router.post("/login")
-def login(data: LoginSchema, conn=Depends(get_db_conn)):
+@limiter.limit("10/minute")
+def login(request: Request, data: LoginSchema, conn=Depends(get_db_conn)):
     repo = UserRepository(conn)
     user = repo.get_by_email(data.correo)
     if not user or not pwd_context.verify(data.contrasena, user.get("contrasena_hash", "")):

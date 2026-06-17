@@ -5,6 +5,9 @@
 .preview-thumb { height: 100px; width: 100%; object-fit: cover; }
 
 #horarios-tabla th {
+  vertical-align: middle;
+  padding: 0.4rem 0;
+}
 
 #horarios-tabla td {
   vertical-align: middle;

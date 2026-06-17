@@ -20,6 +20,12 @@
   padding-bottom: 1.5rem;
 }
 
+.star-rating {
+  direction: rtl;
+  unicode-bidi: bidi-override;
+  display: inline-flex;
+}
+
 .star-rating i {
   cursor: pointer;
   color: #dee2e6;
@@ -27,28 +33,6 @@
 }
 
 .star-rating i.active,
-.star-rating i:hover,
-.star-rating i:hover ~ i {
-  color: #ffc107;
-}
-
-.star-rating {
-  direction: rtl;
-  unicode-bidi: bidi-override;
-  display: inline-flex;
-}
-
-.star-rating i:hover,
-.star-rating i.active {
-  color: #ffc107;
-}
-
-.star-rating i {
-  cursor: pointer;
-  color: #dee2e6;
-  transition: color 0.15s ease;
-}
-
 .star-rating i:hover,
 .star-rating i:hover ~ i {
   color: #ffc107;

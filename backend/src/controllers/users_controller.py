@@ -110,10 +110,13 @@ def actualizar_perfil(
         updates["avatar_url"] = data.avatar_url
 
     if updates:
-        cursor = conn.cursor()
-        set_clause = ", ".join(f"{k}=?" for k in updates.keys())
-        cursor.execute(f"UPDATE Usuarios SET {set_clause} WHERE id_usuario=?", list(updates.values()) + [user["id_usuario"]])
-        cursor.close()
+        user_repo.execute_sp("sp_UpdateUserProfile", {
+            "id_usuario": user["id_usuario"],
+            "nombre": updates.get("nombre"),
+            "apellido": updates.get("apellido"),
+            "correo": updates.get("correo"),
+            "avatar_url": updates.get("avatar_url"),
+        })
         conn.commit()
 
     return MessageResponse(message="Perfil actualizado correctamente")

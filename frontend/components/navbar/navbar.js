@@ -50,3 +50,15 @@ function renderAuthSection() {
 function handleLogout() {
   logout();
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+  const navSearch = document.getElementById('nav-search-input');
+  if (navSearch) {
+    navSearch.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const q = encodeURIComponent(navSearch.value.trim());
+        window.location.href = '/pages/directory/directory.html' + (q ? '?busqueda=' + q : '');
+      }
+    });
+  }
+});

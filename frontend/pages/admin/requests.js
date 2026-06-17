@@ -43,7 +43,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('search-input').scrollIntoView({ behavior: 'smooth' });
   });
 
+  document.getElementById('search-top').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      document.getElementById('search-input').value = e.target.value;
+      currentPage = 1;
+      cargarSolicitudes();
+    }
+  });
+
+  document.getElementById('motivo-rechazo').addEventListener('input', function () {
+    const counter = document.getElementById('motivo-counter');
+    if (counter) counter.textContent = `${this.value.length}/20 caracteres`;
+  });
+
   await cargarSolicitudes();
+  initNotifications();
+  if (window.updateSidebarBadge) window.updateSidebarBadge();
 });
 
 async function cargarCategorias() {
@@ -52,7 +67,7 @@ async function cargarCategorias() {
     const select = document.getElementById('select-categoria');
     const items = cats.items || cats || [];
     select.innerHTML = '<option value="">Todas las categor&iacute;as</option>' +
-      items.map(c => `<option value="${c.id_categoria}">${c.nombre}</option>`).join('');
+      items.map(c => `<option value="${c.id_categoria}">${escHtml(c.nombre)}</option>`).join('');
   } catch (e) {
     // non-critical
   }
@@ -64,6 +79,7 @@ async function cargarStatsCounters() {
     document.getElementById('counter-total').textContent = stats.total_negocios ?? 0;
     document.getElementById('counter-pendientes').textContent = stats.pendientes ?? 0;
     document.getElementById('counter-aprobadas').textContent = (stats.total_negocios - stats.pendientes) ?? 0;
+    if (window.updateSidebarBadge) window.updateSidebarBadge();
   } catch (e) {
     // non-critical
   }
@@ -102,14 +118,14 @@ function renderTable(lista) {
   }
 
   tbody.innerHTML = lista.map(b => {
-    const date = b.fecha_registro ? new Date(b.fecha_registro).toLocaleDateString() : '-';
-    const estado = (b.estado_verificacion || 'pendiente').toLowerCase();
+    const date = b.fecha_registro ? escHtml(new Date(b.fecha_registro).toLocaleDateString()) : '-';
+    const estado = escHtml((b.estado_verificacion || 'pendiente').toLowerCase());
     const badgeClass = estado === 'aprobado' ? 'bg-success'
       : estado === 'rechazado' ? 'bg-danger'
       : 'bg-warning text-dark';
-    const ownerEmail = (b.propietario && b.propietario.correo) || '-';
-    const ownerName = b.propietario ? (b.propietario.nombre + ' ' + b.propietario.apellido) : '-';
-    const safeName = (b.nombre || '').replace(/'/g, "\\'");
+    const ownerEmail = escHtml((b.propietario && b.propietario.correo) || '-');
+    const ownerName = b.propietario ? escHtml(b.propietario.nombre || '') + ' ' + escHtml(b.propietario.apellido || '') : '-';
+    const safeName = escHtml(b.nombre || '');
 
     let actions = '';
     if (estado === 'pendiente') {
@@ -127,8 +143,8 @@ function renderTable(lista) {
     }
 
     return `<tr>
-      <td class="px-4 py-3 fw-semibold">${b.nombre}</td>
-      <td class="px-4 py-3"><span class="badge bg-secondary bg-opacity-10 text-secondary">${b.categoria || '-'}</span></td>
+      <td class="px-4 py-3 fw-semibold">${escHtml(b.nombre || '')}</td>
+      <td class="px-4 py-3"><span class="badge bg-secondary bg-opacity-10 text-secondary">${escHtml(b.categoria || '-')}</span></td>
       <td class="px-4 py-3 small text-muted">${ownerName}<br><small>${ownerEmail}</small></td>
       <td class="px-4 py-3 small text-muted">${date}</td>
       <td class="px-4 py-3"><span class="badge ${badgeClass} estado-badge">${estado}</span></td>
@@ -203,7 +219,7 @@ function abrirRechazar(id, nombre) {
 
 async function confirmarRechazo() {
   const motivo = document.getElementById('motivo-rechazo').value.trim();
-  if (!motivo) {
+  if (!motivo || motivo.length < 20) {
     document.getElementById('motivo-rechazo').classList.add('is-invalid');
     return;
   }

@@ -13,6 +13,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('bienvenida').textContent = `Bienvenido, ${user.nombre}`;
 });
 
+function irAPromociones() {
+  window.location.href = '/pages/entrepreneur/promotions.html';
+}
+
+function irAMiNegocio() {
+  window.location.href = '/pages/entrepreneur/my-business.html';
+}
+
+function mostrarPremium() {
+  const modal = new bootstrap.Modal(document.getElementById('modal-premium'));
+  modal.show();
+}
+
 async function cargarStats() {
   try {
     const data = await apiGet('/entrepreneur/stats');
@@ -98,12 +111,15 @@ function renderizarMetricas(data) {
 
 function renderizarActividad(actividades) {
   const container = document.getElementById('actividad-lista');
+  const footer = document.getElementById('actividad-footer');
 
   if (!actividades || actividades.length === 0) {
     container.innerHTML = '<p class="text-muted small mb-0">No hay actividad reciente</p>';
+    if (footer) footer.classList.add('d-none');
     return;
   }
 
+  if (footer) footer.classList.remove('d-none');
   container.innerHTML = actividades.map(a => {
     let icono = 'bi-chat-square-text';
     let color = 'var(--bizrise-primary-bg)';

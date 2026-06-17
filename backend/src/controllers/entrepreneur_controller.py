@@ -197,17 +197,31 @@ async def _guardar_imagen(upload: UploadFile, subdir: str) -> str:
     if len(contents) > max_bytes:
         raise HTTPException(400, f"La imagen excede el máximo de {settings.MAX_FILE_SIZE_MB}MB")
 
-    ext = os.path.splitext(upload.filename or "imagen.jpg")[1].lower()
-    if ext not in (".jpg", ".jpeg", ".png", ".webp"):
-        ext = ".jpg"
+    try:
+        from PIL import Image
+        import io
+        img = Image.open(io.BytesIO(contents))
+        if img.mode == "RGBA":
+            img = img.convert("RGB")
+        if img.width > 800:
+            ratio = 800.0 / img.width
+            img = img.resize((800, int(img.height * ratio)), Image.LANCZOS)
+        output = io.BytesIO()
+        img.save(output, format="WEBP", quality=85)
+        filename = f"{uuid.uuid4().hex}.webp"
+    except ImportError:
+        ext = os.path.splitext(upload.filename or "imagen.jpg")[1].lower()
+        if ext not in (".jpg", ".jpeg", ".png", ".webp"):
+            ext = ".jpg"
+        filename = f"{uuid.uuid4().hex}{ext}"
+        output = io.BytesIO(contents)
 
-    filename = f"{uuid.uuid4().hex}{ext}"
     upload_dir = os.path.join(settings.UPLOAD_DIR, subdir)
     os.makedirs(upload_dir, exist_ok=True)
     filepath = os.path.join(upload_dir, filename)
 
     with open(filepath, "wb") as f:
-        f.write(contents)
+        f.write(output.getvalue())
 
     return f"/uploads/{subdir}/{filename}"
 

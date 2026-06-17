@@ -33,7 +33,7 @@
 }
 
 .add-card {
-  border: 2px dashed #d0d0d0;
+  border: 2px dashed var(--bizrise-primary);
   border-radius: 10px;
   background: #fafafa;
   cursor: pointer;
@@ -46,19 +46,19 @@
 }
 
 .add-card:hover {
-  border-color: var(--bizrise-primary-light);
+  border-color: var(--bizrise-primary);
   background: var(--bizrise-primary-bg);
 }
 
 .add-card i {
   font-size: 2.5rem;
-  color: var(--bizrise-primary-light);
+  color: var(--bizrise-primary);
 }
 
 .add-card span {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #6c757d;
+  color: var(--bizrise-primary);
 }
 
 .preview-prod-img {

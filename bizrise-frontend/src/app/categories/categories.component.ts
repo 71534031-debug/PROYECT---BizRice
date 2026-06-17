@@ -16,6 +16,11 @@ const CATEGORY_IMAGES: Record<string, string> = {
   'Belleza': 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?w=800&q=80',
   'Agricultura': 'https://images.unsplash.com/photo-1500651230702-0e2d8a49d4ad?w=800&q=80',
   'Hogar': 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800&q=80',
+  'Salud y Bienestar': 'https://images.unsplash.com/photo-1559757175-5700dde675bc?w=800&q=80',
+  'Educación': 'https://images.unsplash.com/photo-1523050854058-8df90110c7f1?w=800&q=80',
+  'Construcción y Ferretería': 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&q=80',
+  'Entretenimiento': 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80',
+  'Transporte': 'https://images.unsplash.com/photo-1566576721341-5f0b11f72db2?w=800&q=80',
 };
 
 const FALLBACK_DESCRIPTIONS: Record<string, string> = {
@@ -28,6 +33,11 @@ const FALLBACK_DESCRIPTIONS: Record<string, string> = {
   'Belleza': 'Estilo y bienestar para tu día a día.',
   'Agricultura': 'Productos frescos directamente del campo.',
   'Hogar': 'Todo para hacer de tu casa un hogar.',
+  'Salud y Bienestar': 'Tu salud y bienestar en las mejores manos.',
+  'Educación': 'Formación de calidad para un futuro mejor.',
+  'Construcción y Ferretería': 'Construye tus proyectos con los mejores.',
+  'Entretenimiento': 'Diversión y ocio para toda la familia.',
+  'Transporte': 'Movilidad segura y eficiente en la ciudad.',
 };
 
 @Component({
