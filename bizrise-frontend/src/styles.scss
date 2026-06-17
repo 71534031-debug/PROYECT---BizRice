@@ -42,6 +42,18 @@ html { scroll-behavior: smooth; }
 .fw-black { font-weight: 900; }
 
 /* Navbar tweaks */
+.navbar {
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+  background: rgba(255,255,255,0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid transparent;
+}
+.navbar.navbar-scrolled {
+  background: rgba(255,255,255,0.95);
+  box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+  border-bottom-color: rgba(0,0,0,0.04);
+}
 .navbar .nav-link { border-bottom: 2px solid transparent; padding-bottom: 0.25rem; }
 .navbar .nav-link.active-nav {
   color: var(--bizrise-primary) !important;
@@ -681,6 +693,61 @@ tr:hover .action-btn-group {
   .cat-card-content h3 { font-size: 1.1rem; }
 }
 
+/* ─── Hero parallax + split text ────────────────────────────── */
+.hero-section {
+  position: relative;
+  overflow: hidden;
+  min-height: 70vh;
+}
+.hero-bg {
+  position: absolute;
+  inset: -5% -10% -10% -10%;
+  background: linear-gradient(135deg,#6f42c1 0%,#4f0baa 50%,#3b078e 100%);
+  will-change: transform;
+  z-index: 0;
+}
+.hero-gradient-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(25,28,30,0.15) 0%, rgba(15,23,42,0.35) 100%);
+  z-index: 1;
+}
+.word-reveal {
+  display: inline-block;
+  opacity: 0;
+}
+@keyframes marquee-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.marquee-banner {
+  width: 100%;
+  overflow: hidden;
+  background: var(--bizrise-primary);
+  padding: 0.4rem 0;
+}
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll 30s linear infinite;
+}
+.marquee-banner:hover .marquee-track {
+  animation-play-state: paused;
+}
+.marquee-text {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  color: rgba(255,255,255,0.92);
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+@media (prefers-reduced-motion: reduce) {
+  .word-reveal { opacity: 1; }
+  .marquee-track { animation: none; }
+}
+
 /* ═══════════════════════════════════════════════════════════════
    MEJORAS VISUALES — Animaciones, Skeleton, Feedback, Mobile
    ═══════════════════════════════════════════════════════════════ */
@@ -959,4 +1026,133 @@ tr:hover .action-btn-group {
 @media (max-width: 991px) {
   .sidebar-toggle { display: flex; }
   .admin-sidebar, .sidebar { display: none; }
+}
+
+/* ─── Mega menú navbar Angular ────────────────────────────── */
+.mega-menu-parent {
+  position: relative;
+}
+.mega-menu {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  width: 500px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.06);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s;
+  z-index: 1050;
+  padding: 1.25rem;
+}
+.mega-menu-parent:hover .mega-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(10px);
+}
+.mega-menu-inner {
+  display: flex;
+  gap: 1.25rem;
+}
+.mega-menu-links {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.mega-link {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--bizrise-on-surface);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+  cursor: pointer;
+}
+.mega-link:hover {
+  background: var(--bizrise-primary-bg);
+  color: var(--bizrise-primary);
+}
+.mega-link i {
+  width: 20px;
+  text-align: center;
+  font-size: 1rem;
+}
+.mega-menu-preview {
+  width: 220px;
+  height: 200px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bizrise-primary-bg);
+}
+@media (max-width: 991.98px) {
+  .mega-menu { display: none !important; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   HOME INTERACTIONS — Features 5-10
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── Feature 5 — Tilt 3D ───────────────────────────────── */
+.card-hover {
+  will-change: transform;
+  transform-style: preserve-3d;
+}
+.card-hover img {
+  will-change: transform;
+}
+
+/* ─── Feature 6 — Mask reveal ────────────────────────────── */
+.card-img-top {
+  will-change: clip-path;
+}
+
+/* ─── Feature 8 — Magnetic buttons ───────────────────────── */
+.magnetic-btn {
+  position: relative;
+  will-change: transform;
+  transition: box-shadow 0.2s ease;
+}
+.magnetic-btn:hover {
+  box-shadow: 0 8px 24px rgba(0,0,0,.15);
+}
+
+/* ─── Feature 9 — Testimonials Swiper ────────────────────── */
+.testimonials-section {
+  overflow: hidden;
+}
+.testimonials-swiper {
+  padding: 0.5rem 0 2.5rem;
+}
+.testimonials-swiper .swiper-slide {
+  height: auto;
+}
+.testimonials-swiper .card {
+  border-radius: 14px;
+}
+.testimonials-swiper .card i {
+  display: block;
+}
+.testimonials-swiper .swiper-pagination {
+  bottom: 0 !important;
+}
+.testimonials-swiper .swiper-pagination-bullet-active {
+  background: var(--bizrise-primary);
+}
+
+/* ─── Feature 10 — Cómo funciona ─────────────────────────── */
+#como-funciona {
+  min-height: 60vh;
+}
+.como-funciona-card {
+  will-change: transform, opacity;
+}
+.como-funciona-title {
+  will-change: transform, opacity;
 }

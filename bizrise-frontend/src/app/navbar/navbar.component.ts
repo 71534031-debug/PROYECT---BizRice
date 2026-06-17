@@ -1,13 +1,14 @@
-import { Component, inject } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Component, inject, HostListener, OnInit } from '@angular/core';
+import { RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
+import { CategoryService } from '../services/category.service';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
   imports: [RouterLink, RouterLinkActive],
   template: `
-    <nav class="navbar navbar-expand-lg navbar-light bg-white/80 backdrop-blur-md sticky-top border-bottom border-slate-200 shadow-sm">
+    <nav class="navbar navbar-expand-lg navbar-light sticky-top" [class.navbar-scrolled]="scrolled">
       <div class="container">
         <a class="navbar-brand d-flex align-items-center gap-2 fw-black fs-4" routerLink="/">
           <span class="text-primary">BizRise</span>
@@ -31,10 +32,28 @@ import { AuthService } from '../services/auth.service';
                 <i class="bi bi-grid"></i> Directorio
               </a>
             </li>
-            <li class="nav-item">
-              <a class="nav-link" routerLink="/categories" routerLinkActive="active-nav">
+            <li class="nav-item mega-menu-parent position-relative">
+              <a class="nav-link" routerLink="/categories" routerLinkActive="active-nav" (mouseenter)="loadMegaCategories()">
                 <i class="bi bi-tags"></i> Categorías
               </a>
+              @if (megaCats.length) {
+                <div class="mega-menu" (mouseleave)="megaHoveredCat = null">
+                  <div class="mega-menu-inner">
+                    <div class="mega-menu-links">
+                      @for (cat of megaCats; track cat.id_categoria) {
+                        <a class="mega-link" [routerLink]="'/directory'" [queryParams]="{categoria: cat.id_categoria}" (mouseenter)="megaHoveredCat = cat">
+                          <i class="bi {{ catIcon($index) }} me-2"></i>{{ cat.nombre }}
+                        </a>
+                      }
+                    </div>
+                    @if (megaHoveredCat) {
+                      <div class="mega-menu-preview d-none d-lg-block">
+                        <img [src]="megaCatImg(megaHoveredCat)" alt="" class="rounded-3 w-100 h-100 object-cover">
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
             </li>
           </ul>
 
@@ -68,8 +87,41 @@ import { AuthService } from '../services/auth.service';
     </nav>
   `
 })
-export class NavbarComponent {
+export class NavbarComponent implements OnInit {
   authService = inject(AuthService);
+  private categoryService = inject(CategoryService);
+  private router = inject(Router);
+
+  scrolled = false;
+  megaCats: any[] = [];
+  megaHoveredCat: any = null;
+  private megaIcons = ['bi-cup-hot','bi-palette','bi-handbag','bi-heart-pulse','bi-tools','bi-laptop','bi-book','bi-house','bi-compass'];
+
+  ngOnInit(): void {
+    this.categoryService.getCategories().subscribe({
+      next: (res: any) => { this.megaCats = res.items || []; }
+    });
+  }
+
+  catIcon(idx: number): string {
+    return this.megaIcons[idx % this.megaIcons.length];
+  }
+
+  megaCatImg(cat: any): string {
+    return cat.imagen_url || `https://picsum.photos/seed/${encodeURIComponent(cat.nombre)}/400/300`;
+  }
+
+  loadMegaCategories(): void {
+    if (this.megaCats.length) return;
+    this.categoryService.getCategories().subscribe({
+      next: (res: any) => { this.megaCats = res.items || []; }
+    });
+  }
+
+  @HostListener('window:scroll')
+  onScroll(): void {
+    this.scrolled = window.scrollY > 20;
+  }
 
   search(query: string): void {
     if (query.trim()) {

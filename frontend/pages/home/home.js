@@ -31,6 +31,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('hero-search').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') buscarDesdeHero();
   });
+
+  initScrollAnimations();
+  initTestimoniosSwiper();
 });
 
 async function cargarCategorias() {
@@ -200,6 +203,103 @@ function initBizScroll(grid) {
 
   leftBtn.addEventListener('click', () => scrollBy(-1));
   rightBtn.addEventListener('click', () => scrollBy(1));
+}
+
+function initTestimoniosSwiper() {
+  const el = document.getElementById('testimonios-swiper');
+  if (!el || typeof Swiper === 'undefined') return;
+
+  const swiper = new Swiper(el, {
+    slidesPerView: 1,
+    spaceBetween: 16,
+    autoplay: {
+      delay: 5000,
+      disableOnInteraction: false,
+      pauseOnMouseEnter: true,
+    },
+    pagination: {
+      el: '.swiper-pagination',
+      clickable: true,
+    },
+    breakpoints: {
+      768: {
+        slidesPerView: 3,
+        spaceBetween: 20,
+      },
+    },
+  });
+}
+
+function initScrollAnimations() {
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduced || typeof gsap === 'undefined') return;
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  const mm = gsap.matchMedia();
+  mm.add('(min-width: 768px)', () => {
+    const heroBg = document.querySelector('.hero-bg');
+    if (heroBg) {
+      gsap.to(heroBg, {
+        y: '15%',
+        ease: 'none',
+        scrollTrigger: {
+          trigger: '.hero-section',
+          start: 'top top',
+          end: 'bottom top',
+          scrub: 1,
+        },
+      });
+    }
+
+    const howSection = document.getElementById('how-it-works-pin');
+    const steps = document.querySelectorAll('.step-item');
+    if (howSection && steps.length) {
+      gsap.set(steps, { opacity: 0, y: 40 });
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: howSection,
+          pin: '.pin-content',
+          start: 'top top',
+          end: '+=200%',
+          scrub: 1,
+          anticipatePin: 1,
+        },
+      });
+      tl.to(steps, {
+        opacity: 1,
+        y: 0,
+        stagger: 0.33,
+        ease: 'power2.out',
+      });
+    }
+  });
+
+  mm.add('(max-width: 767px)', () => {
+    const steps = document.querySelectorAll('.step-item');
+    steps.forEach(s => {
+      s.style.opacity = '1';
+      s.style.transform = 'none';
+    });
+  });
+
+  const catGrid = document.querySelector('#categories-grid');
+  if (catGrid && catGrid.children.length) {
+    const catCards = catGrid.querySelectorAll('.col-4, .col-md-2');
+    gsap.from(catCards, {
+      opacity: 0,
+      y: 30,
+      stagger: 0.06,
+      ease: 'power2.out',
+      scrollTrigger: {
+        trigger: '#categories-grid',
+        start: 'top 85%',
+        toggleActions: 'play none none reverse',
+      },
+    });
+  }
+
+  window.addEventListener('load', () => ScrollTrigger.refresh());
 }
 
 function buscarDesdeHero() {

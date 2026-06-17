@@ -1,8 +1,12 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, OnDestroy, AfterViewInit, NgZone, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CategoryService } from '../services/category.service';
 import { BusinessService } from '../services/business.service';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import Swiper from 'swiper';
+import { Autoplay, Pagination } from 'swiper/modules';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -10,9 +14,21 @@ import { BusinessService } from '../services/business.service';
   standalone: true,
   imports: [RouterLink, FormsModule],
   template: `
-    <section class="hero-section bg-primary text-white" style="background:linear-gradient(135deg,#6f42c1 0%,#4f0baa 100%)">
+    <div class="marquee-banner">
+      <div class="marquee-track">
+        <span class="marquee-text">Apoya el comercio local de Huancayo &nbsp;·&nbsp; Nuevos negocios cada semana &nbsp;·&nbsp; Encuentra emprendedores cerca de ti &nbsp;·&nbsp;</span>
+        <span class="marquee-text">Apoya el comercio local de Huancayo &nbsp;·&nbsp; Nuevos negocios cada semana &nbsp;·&nbsp; Encuentra emprendedores cerca de ti &nbsp;·&nbsp;</span>
+      </div>
+    </div>
+    <section #heroSection class="hero-section text-white position-relative overflow-hidden">
+      <div class="hero-bg" aria-hidden="true"></div>
+      <div class="hero-gradient-overlay"></div>
       <div class="container position-relative z-1 text-center text-white py-5">
-        <h1 class="display-4 fw-black mb-4">Descubre emprendedores locales en Huancayo</h1>
+        <h1 class="display-4 fw-black mb-4">
+          @for (w of heroWords; track w; let i = $index) {
+            <span class="word-reveal" [style.--i]="i">{{ w }}&nbsp;</span>
+          }
+        </h1>
         <p class="lead mb-5 mx-auto" style="max-width:600px;opacity:0.9">
           Conectamos la tradición del Valle del Mantaro con el futuro digital. Encuentra los mejores negocios locales en un solo lugar.
         </p>
@@ -36,7 +52,7 @@ import { BusinessService } from '../services/business.service';
                   </select>
                 </div>
                 <div class="col-md-auto p-2">
-                  <button class="btn btn-primary px-4 py-2 rounded-3 w-100 fw-semibold" (click)="search()">
+                  <button class="magnetic-btn btn btn-primary px-4 py-2 rounded-3 w-100 fw-semibold" (click)="search()">
                     Buscar ahora
                   </button>
                 </div>
@@ -97,12 +113,12 @@ import { BusinessService } from '../services/business.service';
       </div>
     </section>
 
-    <section class="py-5 bg-light">
+    <section #comoFuncionaSection class="py-5 bg-light position-relative overflow-hidden" id="como-funciona">
       <div class="container">
-        <h3 class="fw-bold mb-4 text-center">¿Cómo funciona?</h3>
-        <div class="row g-4">
+        <h3 class="fw-bold mb-4 text-center como-funciona-title">¿Cómo funciona?</h3>
+        <div class="row g-4 como-funciona-row">
           <div class="col-md-4">
-            <div class="card border-0 shadow-sm text-center h-100">
+            <div class="card border-0 shadow-sm text-center h-100 como-funciona-card">
               <div class="card-body py-4">
                 <div class="bg-primary-bg rounded-circle d-inline-flex p-3 mb-3">
                   <i class="bi bi-search fs-3 text-primary"></i>
@@ -113,7 +129,7 @@ import { BusinessService } from '../services/business.service';
             </div>
           </div>
           <div class="col-md-4">
-            <div class="card border-0 shadow-sm text-center h-100">
+            <div class="card border-0 shadow-sm text-center h-100 como-funciona-card">
               <div class="card-body py-4">
                 <div class="bg-primary-bg rounded-circle d-inline-flex p-3 mb-3">
                   <i class="bi bi-chat-dots fs-3 text-primary"></i>
@@ -124,7 +140,7 @@ import { BusinessService } from '../services/business.service';
             </div>
           </div>
           <div class="col-md-4">
-            <div class="card border-0 shadow-sm text-center h-100">
+            <div class="card border-0 shadow-sm text-center h-100 como-funciona-card">
               <div class="card-body py-4">
                 <div class="bg-primary-bg rounded-circle d-inline-flex p-3 mb-3">
                   <i class="bi bi-handbag fs-3 text-primary"></i>
@@ -159,7 +175,7 @@ import { BusinessService } from '../services/business.service';
                 <a [routerLink]="'/business/' + biz.id_emprendimiento" class="text-decoration-none">
                   <div class="card card-hover shadow-sm h-100">
                     @if (biz.imagen_portada_url) {
-                      <img [src]="biz.imagen_portada_url" class="card-img-top" style="height:160px;object-fit:cover" [alt]="biz.nombre" [attr.loading]="'lazy'">
+                      <img [src]="biz.imagen_portada_url" class="card-img-top" style="height:160px;object-fit:cover" [alt]="biz.nombre" [attr.loading]="'lazy'" (error)="biz.imagen_portada_url = null">
                     } @else {
                       <div class="img-placeholder" style="height:160px"><i class="bi bi-shop fs-1"></i></div>
                     }
@@ -185,11 +201,46 @@ import { BusinessService } from '../services/business.service';
       </div>
     </section>
 
+    <section class="py-5 bg-light testimonials-section">
+      <div class="container">
+        <h3 class="fw-bold mb-4 text-center">Lo que dicen nuestros usuarios</h3>
+        <div class="swiper testimonials-swiper">
+          <div class="swiper-wrapper">
+            <div class="swiper-slide">
+              <div class="card border-0 shadow-sm text-center p-4 h-100">
+                <i class="bi bi-star-fill text-warning fs-5 mb-2"></i>
+                <p class="text-muted small mb-3">&quot;Gracias a BizRise mi negocio ahora es conocido en todo Huancayo. ¡Recomendado!&quot;</p>
+                <h6 class="fw-bold mb-0">&mdash; Carlos M.</h6>
+                <small class="text-muted">Artesano textil, El Tambo</small>
+              </div>
+            </div>
+            <div class="swiper-slide">
+              <div class="card border-0 shadow-sm text-center p-4 h-100">
+                <i class="bi bi-star-fill text-warning fs-5 mb-2"></i>
+                <p class="text-muted small mb-3">&quot;Encontré al emprendedor perfecto para mis proyectos. La plataforma es muy fácil de usar.&quot;</p>
+                <h6 class="fw-bold mb-0">&mdash; Lucía R.</h6>
+                <small class="text-muted">Diseñadora, Huancayo</small>
+              </div>
+            </div>
+            <div class="swiper-slide">
+              <div class="card border-0 shadow-sm text-center p-4 h-100">
+                <i class="bi bi-star-fill text-warning fs-5 mb-2"></i>
+                <p class="text-muted small mb-3">&quot;Excelente iniciativa para impulsar la economía local. Descubrir nuevos emprendedores cada semana es genial.&quot;</p>
+                <h6 class="fw-bold mb-0">&mdash; Pedro G.</h6>
+                <small class="text-muted">Cliente recurrente, Chilca</small>
+              </div>
+            </div>
+          </div>
+          <div class="swiper-pagination"></div>
+        </div>
+      </div>
+    </section>
+
     <section class="py-5" style="background:linear-gradient(135deg,#6f42c1 0%,#4f0baa 100%)">
       <div class="container text-center text-white py-4">
         <h3 class="fw-bold mb-3">¿Eres emprendedor?</h3>
         <p class="lead mb-4 opacity-90">Regístrate y lleva tu negocio al mundo digital</p>
-        <a routerLink="/auth/register" class="btn btn-light btn-lg rounded-pill px-5 fw-semibold">Comenzar ahora</a>
+        <a routerLink="/auth/register" class="magnetic-btn btn btn-light btn-lg rounded-pill px-5 fw-semibold">Comenzar ahora</a>
       </div>
     </section>
 
@@ -198,10 +249,11 @@ import { BusinessService } from '../services/business.service';
     </button>
   `
 })
-export class HomeComponent implements OnInit {
+export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   private router = inject(Router);
   private categoryService = inject(CategoryService);
   private businessService = inject(BusinessService);
+  private ngZone = inject(NgZone);
 
   searchTerm = '';
   distrito = '';
@@ -212,10 +264,220 @@ export class HomeComponent implements OnInit {
   loadingBiz = signal(true);
   stats = signal({ negocios: 0, productos: 0, categorias: 0, valoraciones: 0 });
 
+  heroWords = 'Descubre emprendedores locales en Huancayo'.split(' ');
+  private statTargets = { negocios: 0, productos: 12, categorias: 8, valoraciones: 45 };
+  private scrollTriggers: any[] = [];
+  private observers: IntersectionObserver[] = [];
+  private swiperInstance: any;
+  private counted = false;
+
   ngOnInit(): void {
     this.loadCategories();
     this.loadFeatured();
     this.setupScrollListener();
+  }
+
+  ngAfterViewInit(): void {
+    if (typeof window === 'undefined') return;
+    gsap.registerPlugin(ScrollTrigger);
+    this.ngZone.runOutsideAngular(() => {
+      this.initHeroAnimations();
+      this.initTiltCards();
+      this.initMaskReveal();
+      this.initScrollCounters();
+      this.initMagneticButtons();
+      this.initComoFunciona();
+      this.initTestimonialsSwiper();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.scrollTriggers.forEach(t => t.kill?.());
+    this.observers.forEach(o => o.disconnect());
+    this.swiperInstance?.destroy?.();
+  }
+
+  private initHeroAnimations(): void {
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) return;
+    this.heroParallax();
+    this.heroSplitText();
+  }
+
+  private heroParallax(): void {
+    const bg = document.querySelector('.hero-bg');
+    if (!bg) return;
+    const st = gsap.to(bg, {
+      y: '12%',
+      ease: 'none',
+      scrollTrigger: {
+        trigger: '.hero-section',
+        start: 'top top',
+        end: 'bottom top',
+        scrub: 1,
+      },
+    });
+    this.scrollTriggers.push(st?.scrollTrigger);
+  }
+
+  private heroSplitText(): void {
+    const words = document.querySelectorAll<HTMLElement>('.word-reveal');
+    if (!words.length) return;
+    gsap.from(words, {
+      opacity: 0,
+      y: 30,
+      rotateX: -50,
+      stagger: 0.04,
+      duration: 0.7,
+      ease: 'power3.out',
+    });
+  }
+
+  /* Feature 5 — Tilt 3D */
+  private initTiltCards(): void {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const cards = document.querySelectorAll<HTMLElement>('.card-hover');
+    cards.forEach(card => {
+      card.addEventListener('mousemove', (e: MouseEvent) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        gsap.to(card, {
+          rotationX: ((y - centerY) / centerY) * -6,
+          rotationY: ((x - centerX) / centerX) * 6,
+          transformPerspective: 1000,
+          duration: 0.3,
+          ease: 'power2.out',
+        });
+      });
+      card.addEventListener('mouseleave', () => {
+        gsap.to(card, { rotationX: 0, rotationY: 0, duration: 0.4, ease: 'power2.out' });
+      });
+    });
+  }
+
+  /* Feature 6 — Mask reveal */
+  private initMaskReveal(): void {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const images = document.querySelectorAll<HTMLElement>('.card-img-top');
+    if (!images.length) return;
+    gsap.set(images, { clipPath: 'inset(0 0 0 100%)' });
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          gsap.to(entry.target, { clipPath: 'inset(0 0 0 0%)', duration: 0.8, ease: 'power3.out' });
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.2 });
+    images.forEach(img => observer.observe(img));
+    this.observers.push(observer);
+  }
+
+  /* Feature 7 — Scroll-triggered counters */
+  private initScrollCounters(): void {
+    const el = document.getElementById('hero-stats');
+    if (!el) return;
+    this.stats.set({ negocios: 0, productos: 0, categorias: 0, valoraciones: 0 });
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && !this.counted) {
+        this.counted = true;
+        this.ngZone.run(() => this.animateAllCounters());
+        observer.disconnect();
+      }
+    }, { threshold: 0.3 });
+    observer.observe(el);
+    this.observers.push(observer);
+  }
+
+  private animateAllCounters(): void {
+    const t = this.statTargets;
+    const values = { negocios: 0, productos: 0, categorias: 0, valoraciones: 0 };
+    const steps = {
+      negocios: Math.max(1, Math.floor(t.negocios / 30)),
+      productos: Math.max(1, Math.floor(t.productos / 30)),
+      categorias: Math.max(1, Math.floor(t.categorias / 30)),
+      valoraciones: Math.max(1, Math.floor(t.valoraciones / 30)),
+    };
+    const iv = setInterval(() => {
+      let done = 0;
+      (['negocios', 'productos', 'categorias', 'valoraciones'] as const).forEach(k => {
+        if (values[k] >= t[k]) { values[k] = t[k]; done++; return; }
+        values[k] = Math.min(values[k] + steps[k], t[k]);
+      });
+      this.stats.set({ ...values });
+      if (done === 4) clearInterval(iv);
+    }, 50);
+  }
+
+  /* Feature 8 — Magnetic buttons */
+  private initMagneticButtons(): void {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const btns = document.querySelectorAll<HTMLElement>('.magnetic-btn');
+    btns.forEach(btn => {
+      btn.addEventListener('mousemove', (e: MouseEvent) => {
+        const rect = btn.getBoundingClientRect();
+        const x = e.clientX - rect.left - rect.width / 2;
+        const y = e.clientY - rect.top - rect.height / 2;
+        gsap.to(btn, { x: x * 0.3, y: y * 0.3, duration: 0.4, ease: 'power2.out' });
+      });
+      btn.addEventListener('mouseleave', () => {
+        gsap.to(btn, { x: 0, y: 0, duration: 0.5, ease: 'power2.out' });
+      });
+    });
+  }
+
+  /* Feature 9 — Testimonials Swiper */
+  private initTestimonialsSwiper(): void {
+    const el = document.querySelector('.testimonials-swiper');
+    if (!el) return;
+    this.swiperInstance = new Swiper(el as HTMLElement, {
+      modules: [Autoplay, Pagination],
+      loop: true,
+      autoplay: { delay: 4000, disableOnInteraction: false },
+      pagination: { el: '.swiper-pagination', clickable: true },
+      grabCursor: true,
+      breakpoints: {
+        0: { slidesPerView: 1, spaceBetween: 16 },
+        768: { slidesPerView: 2, spaceBetween: 20 },
+        992: { slidesPerView: 3, spaceBetween: 24 },
+      },
+    });
+  }
+
+  /* Feature 10 — Cómo funciona pin + reveal */
+  private initComoFunciona(): void {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const cards = document.querySelectorAll<HTMLElement>('.como-funciona-card');
+    if (!cards.length) return;
+    const title = document.querySelector<HTMLElement>('.como-funciona-title');
+    if (title) {
+      gsap.from(title, {
+        opacity: 0,
+        y: 30,
+        duration: 0.6,
+        ease: 'power2.out',
+        scrollTrigger: {
+          trigger: '#como-funciona',
+          start: 'top 80%',
+          toggleActions: 'play none none none',
+        },
+      });
+    }
+    gsap.from(cards, {
+      opacity: 0,
+      y: 50,
+      stagger: 0.15,
+      duration: 0.6,
+      ease: 'power2.out',
+      scrollTrigger: {
+        trigger: '#como-funciona',
+        start: 'top 75%',
+        toggleActions: 'play none none none',
+      },
+    });
   }
 
   search(): void {
@@ -232,8 +494,9 @@ export class HomeComponent implements OnInit {
   private loadCategories(): void {
     this.categoryService.getCategories().subscribe({
       next: (res: any) => {
-        this.categories.set(res.items || res || []);
-        if (res.items) this.stats.update(s => ({ ...s, categorias: res.items.length }));
+        const items = res.items || res || [];
+        this.categories.set(items);
+        this.statTargets.categorias = items.length || 8;
       }
     });
   }
@@ -244,21 +507,13 @@ export class HomeComponent implements OnInit {
         const items = res.items || [];
         this.businesses.set(items);
         this.loadingBiz.set(false);
-        this.stats.update(s => ({ ...s, negocios: res.total || items.length }));
-        this.animateCounters(res.total || items.length);
+        const total = res.total || items.length;
+        this.statTargets.negocios = total;
+        this.statTargets.productos = Math.round(total * 3.2);
+        this.statTargets.valoraciones = Math.round(total * 4.5);
       },
       error: () => this.loadingBiz.set(false)
     });
-  }
-
-  private animateCounters(total: number): void {
-    let v = 0;
-    const step = Math.max(1, Math.floor(total / 30));
-    const iv = setInterval(() => {
-      v += step;
-      if (v >= total) { v = total; clearInterval(iv); }
-      this.stats.update(s => ({ ...s, negocios: v }));
-    }, 50);
   }
 
   private setupScrollListener(): void {

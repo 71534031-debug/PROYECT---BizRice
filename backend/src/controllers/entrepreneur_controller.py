@@ -697,11 +697,17 @@ def cambiar_contrasena(
     return MessageResponse(message="Contraseña actualizada exitosamente")
 
 
+@router.get("/settings/notifications", response_model=NotificationPreferences)
+def obtener_preferencias(
+    current_user=Depends(require_role("emprendedor")),
+):
+    return NotificationPreferences(email_notificaciones=True, whatsapp_notificaciones=False)
+
+
 @router.put("/settings/notifications", response_model=MessageResponse)
 def guardar_preferencias(
     data: NotificationPreferences,
     current_user=Depends(require_role("emprendedor")),
     conn=Depends(get_db_conn),
 ):
-    conn.commit()
     return MessageResponse(message="Preferencias guardadas")

@@ -313,7 +313,7 @@ def obtener_notificaciones(
 @router.get("/businesses", response_model=BusinessListResponse)
 def listar_emprendimientos(
     page: int = Query(1, ge=1),
-    size: int = Query(10, ge=1, le=100),
+    size: int = Query(10, ge=1, le=10000),
     estado: Optional[str] = None,
     categoria: Optional[int] = None,
     busqueda: Optional[str] = None,
@@ -427,7 +427,7 @@ def admin_eliminar_emprendimiento(
 @router.get("/users", response_model=UserListResponse)
 def listar_usuarios(
     page: int = Query(1, ge=1),
-    size: int = Query(10, ge=1, le=100),
+    size: int = Query(10, ge=1, le=10000),
     rol: Optional[str] = None,
     estado: Optional[str] = None,
     busqueda: Optional[str] = None,
