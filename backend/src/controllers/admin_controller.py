@@ -442,7 +442,10 @@ def admin_actualizar_emprendimiento(
             raise HTTPException(404, "Emprendimiento no encontrado")
 
     if update_data:
-        biz = repo.get_by_id(id_emprendimiento)
+        biz = repo.execute_sp_single(
+            "SELECT id_usuario FROM Emprendimientos WHERE id_emprendimiento = %(id)s",
+            {"id": id_emprendimiento},
+        )
         if biz:
             id_usuario = biz.get("id_usuario") or 0
             repo.update(id_emprendimiento, id_usuario, update_data)

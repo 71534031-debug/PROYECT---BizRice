@@ -4,11 +4,14 @@ from datetime import datetime, timedelta, timezone
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 import re
+import logging
 
 from src.config.db import get_db_conn
 from src.config.settings import settings
 from src.config.limiter import limiter
 from src.repositories.user_repository import UserRepository
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -95,6 +98,7 @@ def register(request: Request, data: RegisterSchema, conn=Depends(get_db_conn)):
         "rol": "emprendedor",
     })
     conn.commit()
+    logger.info(f"Registro exitoso: {data.correo} (id={user.get('id_usuario')})")
     return _token_response(user)
 
 
@@ -104,9 +108,12 @@ def login(request: Request, data: LoginSchema, conn=Depends(get_db_conn)):
     repo = UserRepository(conn)
     user = repo.get_by_email(data.correo)
     if not user or not pwd_context.verify(data.contrasena, user.get("contrasena_hash", "")):
+        logger.warning(f"Login fallido para {data.correo}")
         raise HTTPException(401, "Correo o contraseña incorrectos")
     if user.get("estado") == "suspendido":
+        logger.warning(f"Login de cuenta suspendida: {data.correo}")
         raise HTTPException(403, "Tu cuenta está suspendida. Contacta al administrador.")
+    logger.info(f"Login exitoso: {data.correo} (rol={user['rol']})")
     return _token_response(user)
 
 

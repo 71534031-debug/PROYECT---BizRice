@@ -52,6 +52,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+logger.info(f"CORS allowed origins: {settings.ORIGINS_LIST}")
 app.add_middleware(SecurityHeadersMiddleware)
 
 os.makedirs("uploads/negocios", exist_ok=True)
@@ -80,9 +81,15 @@ async def global_exception_handler(request: Request, exc: Exception):
 @app.on_event("startup")
 def startup():
     Base.metadata.create_all(bind=engine)
-    logger.info("Tablas creadas/verificadas en PostgreSQL")
+    db_sanitized = settings.DATABASE_URL.split("@")[-1] if "@" in settings.DATABASE_URL else settings.DATABASE_URL
+    logger.info(f"Conectado a PostgreSQL: {db_sanitized}")
+    logger.info(f"Tablas creadas/verificadas en PostgreSQL")
 
 
 @app.get("/")
 def root():
     return {"message": "BizRise API corriendo", "docs": "/docs"}
+
+@app.get("/health")
+def health():
+    return {"status": "ok", "app": "BizRise API"}

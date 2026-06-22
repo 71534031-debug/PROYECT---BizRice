@@ -11,13 +11,14 @@ function getApiUrl() {
   if (host === 'localhost' || host === '127.0.0.1') {
     return 'http://localhost:8000/api/v1';
   }
-  if (host.includes('vercel.app') || host.includes('bizrise') || port === '5500') {
-    return 'http://localhost:8000/api/v1';
+  if (port === '5500' || host.includes('bizrise')) {
+    return 'https://proyect-bizrice-1.onrender.com/api/v1';
   }
-  return 'https://bizrise-backend.onrender.com/api/v1';
+  return 'https://proyect-bizrice-1.onrender.com/api/v1';
 }
 
 const API_URL = getApiUrl();
+console.log('[BizRise] API_URL =', API_URL);
 
 function getAuthHeaders() {
   const token = localStorage.getItem('bizrise_access_token');
@@ -28,117 +29,66 @@ function getAuthHeaders() {
 }
 
 async function apiGet(endpoint) {
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    headers: getAuthHeaders()
-  });
-  if (response.status === 401) {
-    const refreshed = await tryRefreshToken();
-    if (refreshed) return apiGet(endpoint);
-    redirectToLogin();
-    return null;
+  try {
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      headers: getAuthHeaders()
+    });
+    if (response.status === 401) {
+      const refreshed = await tryRefreshToken();
+      if (refreshed) return apiGet(endpoint);
+      redirectToLogin();
+      return null;
+    }
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.detail || `Error ${response.status}: ${response.statusText}`);
+    }
+    return response.json();
+  } catch (err) {
+    if (err.name === 'TypeError' && err.message === 'Failed to fetch') {
+      console.error('[BizRise] Red error — ¿el backend está caído?', API_URL);
+      throw new Error('No se pudo conectar con el servidor. Verifica que el backend esté corriendo.');
+    }
+    throw err;
   }
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Error del servidor');
-  }
-  return response.json();
 }
 
-async function apiPost(endpoint, data) {
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    method: 'POST',
-    headers: getAuthHeaders(),
-    body: JSON.stringify(data)
-  });
-  if (response.status === 401) {
-    const refreshed = await tryRefreshToken();
-    if (refreshed) return apiPost(endpoint, data);
-    redirectToLogin();
-    return null;
+async function _request(method, endpoint, body, isForm = false) {
+  try {
+    const token = localStorage.getItem('bizrise_access_token');
+    const headers = isForm
+      ? (token ? { 'Authorization': `Bearer ${token}` } : {})
+      : getAuthHeaders();
+    const opts = { method, headers };
+    if (body) opts.body = isForm ? body : JSON.stringify(body);
+
+    const response = await fetch(`${API_URL}${endpoint}`, opts);
+    if (response.status === 401) {
+      const refreshed = await tryRefreshToken();
+      if (refreshed) return _request(method, endpoint, body, isForm);
+      redirectToLogin();
+      return null;
+    }
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.detail || `Error ${response.status}: ${response.statusText}`);
+    }
+    return response.json();
+  } catch (err) {
+    if (err.name === 'TypeError' && err.message === 'Failed to fetch') {
+      console.error('[BizRise] Red error — ¿el backend está caído?', API_URL + endpoint);
+      throw new Error('No se pudo conectar con el servidor. Verifica que el backend esté corriendo.');
+    }
+    throw err;
   }
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Error del servidor');
-  }
-  return response.json();
 }
 
-async function apiPut(endpoint, data) {
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    method: 'PUT',
-    headers: getAuthHeaders(),
-    body: JSON.stringify(data)
-  });
-  if (response.status === 401) {
-    const refreshed = await tryRefreshToken();
-    if (refreshed) return apiPut(endpoint, data);
-    redirectToLogin();
-    return null;
-  }
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Error del servidor');
-  }
-  return response.json();
-}
-
-async function apiDelete(endpoint) {
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    method: 'DELETE',
-    headers: getAuthHeaders()
-  });
-  if (response.status === 401) {
-    const refreshed = await tryRefreshToken();
-    if (refreshed) return apiDelete(endpoint);
-    redirectToLogin();
-    return null;
-  }
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Error del servidor');
-  }
-  return response.json();
-}
-
-async function apiPutForm(endpoint, formData) {
-  const token = localStorage.getItem('bizrise_access_token');
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    method: 'PUT',
-    headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-    body: formData
-  });
-  if (response.status === 401) {
-    const refreshed = await tryRefreshToken();
-    if (refreshed) return apiPutForm(endpoint, formData);
-    redirectToLogin();
-    return null;
-  }
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Error al subir archivo');
-  }
-  return response.json();
-}
-
-async function apiPostForm(endpoint, formData) {
-  const token = localStorage.getItem('bizrise_access_token');
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    method: 'POST',
-    headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-    body: formData
-  });
-  if (response.status === 401) {
-    const refreshed = await tryRefreshToken();
-    if (refreshed) return apiPostForm(endpoint, formData);
-    redirectToLogin();
-    return null;
-  }
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Error al subir archivo');
-  }
-  return response.json();
-}
+function apiGet(endpoint) { return _request('GET', endpoint); }
+function apiPost(endpoint, data) { return _request('POST', endpoint, data); }
+function apiPut(endpoint, data) { return _request('PUT', endpoint, data); }
+function apiDelete(endpoint) { return _request('DELETE', endpoint); }
+function apiPostForm(endpoint, formData) { return _request('POST', endpoint, formData, true); }
+function apiPutForm(endpoint, formData) { return _request('PUT', endpoint, formData, true); }
 
 async function tryRefreshToken() {
   const refresh = localStorage.getItem('bizrise_refresh_token');
