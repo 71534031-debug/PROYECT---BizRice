@@ -342,8 +342,52 @@ def startup():
             logger.info(f"BD ya tiene datos ({count} emprendimientos) — saltando seed")
             _update_images()
             _seed_pending_businesses()
+            _seed_entrepreneur_businesses()
     except Exception as e:
         logger.warning(f"No se pudo verificar/seed la BD: {e}")
+
+
+def _seed_entrepreneur_businesses():
+    conn = connection_pool.getconn()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM Emprendimientos WHERE id_usuario = 2")
+        if cur.fetchone()[0] > 0:
+            cur.close()
+            logger.info("Usuario emprendedor ya tiene negocios — saltando")
+            return
+        cur.execute("SELECT id_categoria FROM Categorias ORDER BY id_categoria")
+        cats = [r[0] for r in cur.fetchall()]
+        base = 'https://proyect-bizrice-1.onrender.com/api/v1/placeholder?text='
+        b1 = (2, cats[0], 'Sabores del Valle', 'Restaurante familiar con platos típicos de la región Junín. Pachamanca, trucha, cuy chactado y más.')
+        b2 = (2, cats[2], 'Arte Wanka Original', 'Taller de artesanía y cerámica pintada a mano. Figuras retablo, mates burilados y recuerdos.')
+        for biz in [b1, b2]:
+            uid, cid, nom, desc = biz
+            slug = nom.replace(' ', '+')
+            cur.execute("""INSERT INTO Emprendimientos (id_usuario, id_categoria, nombre, descripcion, telefono, direccion, distrito, estado_verificacion, imagen_portada_url)
+                           VALUES (%s, %s, %s, %s, '965555555', 'Jr. Real 500', 'Huancayo', 'aprobado', %s)
+                           RETURNING id_emprendimiento""",
+                       (uid, cid, nom, desc, f'{base}{slug}'))
+            eid = cur.fetchone()[0]
+            prods = [
+                (eid, 'Pachamanca para 2', 'Pachamanca tradicional', 45.00, 20, 'disponible', f'{base}Pachamanca+para+2&w=400&h=400'),
+                (eid, 'Cuy Chactado', 'Cuy chactado crocante', 38.00, 15, 'disponible', f'{base}Cuy+Chactado&w=400&h=400'),
+                (eid, 'Trucha Frita', 'Trucha fresca del Mantaro', 28.00, 30, 'disponible', f'{base}Trucha+Frita&w=400&h=400'),
+            ] if biz == b1 else [
+                (eid, 'Retablo Ayacuchano Mediano', 'Retablo artesanal 20cm', 95.00, 10, 'disponible', f'{base}Retablo+Ayacuchano&w=400&h=400'),
+                (eid, 'Mate Burilado', 'Mate burilado decorativo', 45.00, 25, 'disponible', f'{base}Mate+Burilado&w=400&h=400'),
+                (eid, 'Cerámico Pintado a Mano', 'Plato decorativo pintado', 35.00, 20, 'disponible', f'{base}Ceramico+Pintado&w=400&h=400'),
+            ]
+            for p in prods:
+                cur.execute("""INSERT INTO Productos (id_emprendimiento, nombre, descripcion, precio, stock, estado_stock, imagen_url)
+                               VALUES (%s, %s, %s, %s, %s, %s, %s)""", p)
+        conn.commit()
+        logger.info("2 negocios aprobados creados para emprendedor@bizrise.pe")
+    except Exception as e:
+        conn.rollback()
+        logger.warning(f"Error creando negocios para emprendedor: {e}")
+    finally:
+        connection_pool.putconn(conn)
 
 
 @app.get("/api/v1/placeholder")
