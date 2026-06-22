@@ -111,3 +111,31 @@ Toda acción debe:
 - Frontend: http://localhost:4200 (ng serve)
 - Backend: http://localhost:8000
 - SQL Server: localhost:1433
+- Neon (PostgreSQL): configurado via DATABASE_URL en Render
+
+---
+
+## PROGRESO — 22 Jun 2026
+
+### Archivos ya deployados en GitHub y funcionando en producción:
+- `backend/main.py` — CORSSecureMiddleware (fuerza CORS en toda respuesta)
+- `backend/src/config/settings.py` — ALLOWED_ORIGINS = "*"
+- `bizrise-frontend/src/environments/environment.prod.ts` — apiUrl = https://proyect-bizrice-1.onrender.com/api/v1
+- `bizrise-frontend/angular.json` — fileReplacements para prod
+- `bizrise-frontend/vercel.json` — SPA rewrites
+
+### Pendiente (instruir al usuario):
+1. Ir a Neon SQL Editor → ejecutar `backend/src/database/neon_schema.sql` → luego `backend/src/database/neon_seeds.sql` → luego `backend/src/database/neon_functions.sql`
+2. Ir a Render Dashboard → verificar que el último push se deployó (trigger automático)
+3. Probar: `https://proyect-bizrice-1.onrender.com/health`
+4. Probar login: admin@bizrise.pe / Admin123!
+5. Verificar directorio con 10 negocios en Angular desplegado
+6. Mostrar al profe: neon_functions.sql (procedimientos almacenados PostgreSQL)
+
+### Cuentas de prueba (después de ejecutar seeds):
+| Rol | Email | Password |
+|-----|-------|----------|
+| Admin | admin@bizrise.pe | Admin123! |
+| Emprendedor | emprendedor@bizrise.pe | Emprendedor1! |
+| Cliente | cliente@bizrise.pe | Cliente1! |
+| Emprendedor (negocios) | marco.solis@email.com | Pass123! |
