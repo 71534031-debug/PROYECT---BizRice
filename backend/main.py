@@ -11,7 +11,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from src.config.settings import settings
 from src.config.limiter import limiter
-from src.config.db import engine, Base, SessionLocal
+from src.config.db import engine, Base, connection_pool
 
 from src.models import user, business, category, product, review, rating, promotion, social_network, sale
 
@@ -83,6 +83,35 @@ def startup():
     db_sanitized = settings.DATABASE_URL.split("@")[-1] if "@" in settings.DATABASE_URL else settings.DATABASE_URL
     logger.info(f"Conectado a PostgreSQL: {db_sanitized}")
     logger.info(f"Tablas creadas/verificadas en PostgreSQL")
+
+    try:
+        conn = connection_pool.getconn()
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM Emprendimientos")
+        count = cursor.fetchone()[0]
+        cursor.close()
+        connection_pool.putconn(conn)
+        if count == 0:
+            logger.info("BD vacía — ejecutando seed automático...")
+            seed_path = os.path.join(os.path.dirname(__file__), "src", "database", "neon_seeds.sql")
+            with open(seed_path, "r", encoding="utf-8") as f:
+                sql = f.read()
+            conn2 = connection_pool.getconn()
+            try:
+                cur = conn2.cursor()
+                cur.execute(sql)
+                conn2.commit()
+                cur.close()
+                logger.info("Seed automático completado exitosamente")
+            except Exception as e:
+                conn2.rollback()
+                logger.warning(f"Seed automático falló (BD ya puede tener datos parciales): {e}")
+            finally:
+                connection_pool.putconn(conn2)
+        else:
+            logger.info(f"BD ya tiene datos ({count} emprendimientos) — saltando seed")
+    except Exception as e:
+        logger.warning(f"No se pudo verificar/seed la BD: {e}")
 
 
 @app.get("/")
