@@ -285,13 +285,12 @@ def _update_images():
             'Moda Andina Boutique',
         ]
         for name in names:
-            cur.execute("UPDATE Emprendimientos SET imagen_portada_url = %s WHERE nombre = %s AND imagen_portada_url IS NULL",
+            cur.execute("UPDATE Emprendimientos SET imagen_portada_url = %s WHERE nombre = %s",
                        (base + name.replace(' ', '+'), name))
         conn.commit()
 
         pimg = 'https://proyect-bizrice-1.onrender.com/api/v1/placeholder?text='
-        cur.execute("""UPDATE Productos SET imagen_url = CONCAT(%s, REPLACE(nombre, ' ', '+'), '&w=400&h=400')
-                       WHERE imagen_url IS NULL""", (pimg,))
+        cur.execute("""UPDATE Productos SET imagen_url = CONCAT(%s, REPLACE(nombre, ' ', '+'), '&w=400&h=400')"""
         conn.commit()
         logger.info("Imágenes placeholder actualizadas")
     except Exception as e:
