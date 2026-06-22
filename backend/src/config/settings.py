@@ -11,7 +11,7 @@ class Settings(BaseSettings):
 
     APP_NAME:        str  = "BizRise API"
     DEBUG:           bool = False
-    ALLOWED_ORIGINS: str  = "http://localhost:5500,http://127.0.0.1:5500"
+    ALLOWED_ORIGINS: str  = "*"
 
     UPLOAD_DIR:       str = "uploads"
     MAX_FILE_SIZE_MB: int = 2
