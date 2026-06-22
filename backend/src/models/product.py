@@ -13,6 +13,6 @@ class Producto(Base):
     stock             = Column(Integer,     nullable=False, default=0)
     estado_stock      = Column(String(20),  nullable=False, default="disponible")
     activo            = Column(Boolean,     nullable=False, default=True)
-    fecha_creacion    = Column(DateTime, server_default=func.getdate())
+    fecha_creacion    = Column(DateTime, server_default=func.now())
 
     emprendimiento = relationship("Emprendimiento", back_populates="productos")

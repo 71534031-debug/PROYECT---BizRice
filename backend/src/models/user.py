@@ -11,4 +11,4 @@ class Usuario(Base):
     rol             = Column(String(20),  nullable=False, default="emprendedor")
     estado          = Column(String(20),  nullable=False, default="activo")
     avatar_url      = Column(String(255), nullable=True)
-    fecha_registro  = Column(DateTime, server_default=func.getdate())
+    fecha_registro  = Column(DateTime, server_default=func.now())

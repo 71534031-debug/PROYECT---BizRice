@@ -9,7 +9,7 @@ class Comentario(Base):
     id_emprendimiento = Column(Integer, ForeignKey("Emprendimientos.id_emprendimiento"), nullable=False)
     contenido         = Column(Text,    nullable=False)
     util_count        = Column(Integer, nullable=False, default=0)
-    fecha             = Column(DateTime, server_default=func.getdate())
+    fecha             = Column(DateTime, server_default=func.now())
 
     usuario        = relationship("Usuario",         foreign_keys=[id_usuario])
     emprendimiento = relationship("Emprendimiento",  back_populates="comentarios")

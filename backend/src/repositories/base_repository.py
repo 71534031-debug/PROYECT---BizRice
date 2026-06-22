@@ -1,59 +1,49 @@
-import pyodbc
+import psycopg2
+import psycopg2.extras
 from typing import Any
 
 
 class BaseRepository:
-    """Repositorio base que ejecuta procedimientos almacenados.
+    """Repositorio base que ejecuta consultas SQL directas sobre PostgreSQL.
 
-    Recibe una conexión pyodbc directa (no SQLAlchemy session)
-    y ejecuta EXEC sp_name @param1=?, @param2=? retornando listas de dicts.
+    Recibe una conexión psycopg2 directa (no SQLAlchemy session)
+    y ejecuta consultas SQL con parámetros nombrados %(name)s,
+    retornando listas de dicts.
     """
 
-    def __init__(self, db: pyodbc.Connection):
+    def __init__(self, db: psycopg2.extensions.connection):
         self.db = db
 
-    def execute_sp(self, sp_name: str, params: dict[str, Any] | None = None) -> list[dict[str, Any]]:
-        """Ejecuta un procedimiento almacenado y retorna lista de dicts.
-
-        Cada dict representa una fila del primer resultset.
-        Si el SP retorna múltiples resultsets, usar execute_sp_multi().
-        """
+    def execute_sp(self, sql: str, params: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+        """Ejecuta una consulta SQL y retorna lista de dicts."""
         if params is None:
             params = {}
 
-        cursor = self.db.cursor()
-        param_str = ", ".join([f"@{k}=?" for k in params.keys()])
-        query = f"EXEC {sp_name} {param_str}" if param_str else f"EXEC {sp_name}"
-        cursor.execute(query, list(params.values()))
+        cursor = self.db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor.execute(sql, params)
 
         if cursor.description is None:
             cursor.close()
             return []
 
-        columns = [col[0] for col in cursor.description]
-        rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        rows = cursor.fetchall()
+        result = [dict(row) for row in rows]
         cursor.close()
-        return rows
+        return result
 
-    def execute_sp_multi(self, sp_name: str, params: dict[str, Any] | None = None) -> list[list[dict[str, Any]]]:
-        """Ejecuta SP y retorna TODOS los resultsets como listas de dicts.
-
-        Útil para SPs que devuelven múltiples tablas (ej: detalle + redes + promos).
-        """
+    def execute_sp_multi(self, sql: str, params: dict[str, Any] | None = None) -> list[list[dict[str, Any]]]:
+        """Ejecuta múltiples consultas separadas por ; y retorna lista de resultsets."""
         if params is None:
             params = {}
 
-        cursor = self.db.cursor()
-        param_str = ", ".join([f"@{k}=?" for k in params.keys()])
-        query = f"EXEC {sp_name} {param_str}" if param_str else f"EXEC {sp_name}"
-        cursor.execute(query, list(params.values()))
+        cursor = self.db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor.execute(sql, params)
 
         results = []
         while True:
             if cursor.description:
-                columns = [col[0] for col in cursor.description]
-                rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
-                results.append(rows)
+                rows = cursor.fetchall()
+                results.append([dict(row) for row in rows])
             else:
                 results.append([])
             if not cursor.nextset():
@@ -62,7 +52,7 @@ class BaseRepository:
         cursor.close()
         return results
 
-    def execute_sp_single(self, sp_name: str, params: dict[str, Any] | None = None) -> dict[str, Any] | None:
-        """Ejecuta SP y retorna la primera fila del primer resultset, o None."""
-        rows = self.execute_sp(sp_name, params)
+    def execute_sp_single(self, sql: str, params: dict[str, Any] | None = None) -> dict[str, Any] | None:
+        """Ejecuta una consulta SQL y retorna la primera fila, o None."""
+        rows = self.execute_sp(sql, params)
         return rows[0] if rows else None

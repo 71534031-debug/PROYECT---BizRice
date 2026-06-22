@@ -1,4 +1,5 @@
-import pyodbc
+import psycopg2
+from psycopg2 import pool
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 from src.config.settings import settings
@@ -28,24 +29,24 @@ def get_db():
         db.close()
 
 
+connection_pool = psycopg2.pool.SimpleConnectionPool(
+    1,
+    10,
+    dsn=settings.DATABASE_URL,
+)
+
+
 def get_db_conn():
-    """Dependency FastAPI — inyecta conexión pyodbc directa para SPs.
+    """Dependency FastAPI — inyecta conexión psycopg2 directa para queries.
 
     Uso en controllers:
         def endpoint(conn = Depends(get_db_conn)):
             repo = UserRepository(conn)
             ...
     """
-    driver = settings.DB_DRIVER
-    conn_str = (
-        f"DRIVER={{{driver}}};"
-        f"SERVER={settings.DB_SERVER};"
-        f"DATABASE={settings.DB_NAME};"
-        f"UID={settings.DB_USER};"
-        f"PWD={settings.DB_PASSWORD}"
-    )
-    conn = pyodbc.connect(conn_str, autocommit=False)
+    conn = connection_pool.getconn()
+    conn.autocommit = False
     try:
         yield conn
     finally:
-        conn.close()
+        connection_pool.putconn(conn)

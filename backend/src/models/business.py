@@ -16,7 +16,7 @@ class Emprendimiento(Base):
     horario_cierre      = Column(Time,        nullable=True)
     imagen_portada_url  = Column(String(255), nullable=True)
     estado_verificacion = Column(String(20),  nullable=False, default="pendiente")
-    fecha_registro      = Column(DateTime, server_default=func.getdate())
+    fecha_registro      = Column(DateTime, server_default=func.now())
 
     propietario    = relationship("Usuario",    foreign_keys=[id_usuario])
     categoria      = relationship("Categoria",  foreign_keys=[id_categoria])

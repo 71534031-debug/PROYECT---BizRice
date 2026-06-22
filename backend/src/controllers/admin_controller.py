@@ -190,7 +190,19 @@ def obtener_estadisticas(
     conn=Depends(get_db_conn),
 ):
     repo = BaseRepository(conn)
-    stats_rows = repo.execute_sp("sp_GetAdminStats")
+    sql_stats = """SELECT
+        (SELECT COUNT(*) FROM Usuarios) AS total_usuarios,
+        (SELECT COUNT(*) FROM Usuarios WHERE rol = 'emprendedor') AS total_emprendedores,
+        (SELECT COUNT(*) FROM Usuarios WHERE rol = 'cliente') AS total_clientes,
+        (SELECT COUNT(*) FROM Emprendimientos) AS total_emprendimientos,
+        (SELECT COUNT(*) FROM Emprendimientos WHERE estado_verificacion = 'aprobado') AS emprendimientos_aprobados,
+        (SELECT COUNT(*) FROM Emprendimientos WHERE estado_verificacion = 'pendiente') AS emprendimientos_pendientes,
+        (SELECT COUNT(*) FROM Emprendimientos WHERE estado_verificacion = 'rechazado') AS emprendimientos_rechazados,
+        (SELECT COUNT(*) FROM Productos WHERE activo = TRUE) AS total_productos_activos,
+        (SELECT COUNT(*) FROM Categorias) AS total_categorias,
+        (SELECT COUNT(*) FROM Comentarios) AS total_comentarios,
+        (SELECT COUNT(*) FROM Valoraciones) AS total_valoraciones"""
+    stats_rows = repo.execute_sp(sql_stats)
 
     if not stats_rows:
         return StatsResponse(
@@ -203,10 +215,14 @@ def obtener_estadisticas(
     total_negocios = int(meta.get("total_emprendimientos", 0))
     pendientes = int(meta.get("emprendimientos_pendientes", 0))
 
-    # El SP devuelve 4 resultsets: stats, usuarios x 7 días, solicitudes pendientes, top 5
-    # Re-ejecutar con multi para obtener las listas
-    results = repo.execute_sp_multi("sp_GetAdminStats")
-    solicitudes_raw = results[2] if len(results) > 2 else []
+    sql_solicitudes = """SELECT e.id_emprendimiento, e.nombre, e.fecha_registro,
+                                u.nombre AS propietario_nombre, u.apellido AS propietario_apellido, u.correo
+                         FROM Emprendimientos e
+                         INNER JOIN Usuarios u ON e.id_usuario = u.id_usuario
+                         WHERE e.estado_verificacion = 'pendiente'
+                         ORDER BY e.fecha_registro ASC
+                         LIMIT 10"""
+    solicitudes_raw = repo.execute_sp(sql_solicitudes)
 
     solicitudes_recientes = [
         SolicitudReciente(
@@ -219,12 +235,11 @@ def obtener_estadisticas(
         for s in solicitudes_raw[:5]
     ]
 
-    # Crecimiento mensual se calcula desde los datos de usuarios x 7 días + stats
     crecimiento_mensual = [
         CrecimientoMensual(mes=MESES[datetime.now(timezone.utc).month - 1], negocios=total_negocios),
     ]
 
-    nuevos_usuarios_mes = int(meta.get("total_usuarios", 0))  # fallback
+    nuevos_usuarios_mes = int(meta.get("total_usuarios", 0))
     crecimiento_porcentaje = 0
 
     return StatsResponse(
@@ -242,14 +257,16 @@ def obtener_metricas_dashboard(
     current_user=Depends(require_role("administrador")),
     conn=Depends(get_db_conn),
 ):
-    """Obtiene métricas completas del dashboard.
-
-    NOTA: Para un dashboard real, crear SP dedicado sp_GetDashboardMetrics.
-    Por ahora se reusa sp_GetAdminStats y se completan los campos.
-    """
     repo = BaseRepository(conn)
-    stats = repo.execute_sp_multi("sp_GetAdminStats")
-    meta = stats[0][0] if stats and stats[0] else {}
+    sql = """SELECT
+        (SELECT COUNT(*) FROM Usuarios) AS total_usuarios,
+        (SELECT COUNT(*) FROM Usuarios WHERE rol = 'emprendedor') AS total_emprendedores,
+        (SELECT COUNT(*) FROM Usuarios WHERE rol = 'cliente') AS total_clientes,
+        (SELECT COUNT(*) FROM Emprendimientos WHERE estado_verificacion = 'aprobado') AS emprendimientos_aprobados,
+        (SELECT COUNT(*) FROM Emprendimientos WHERE estado_verificacion = 'pendiente') AS emprendimientos_pendientes,
+        (SELECT COUNT(*) FROM Productos WHERE activo = TRUE) AS total_productos_activos"""
+    stats = repo.execute_sp(sql)
+    meta = stats[0] if stats else {}
 
     return DashboardMetricsResponse(
         total_usuarios=int(meta.get("total_usuarios", 0)),
@@ -275,7 +292,18 @@ def obtener_top_productos(
     conn=Depends(get_db_conn),
 ):
     repo = BaseRepository(conn)
-    rows = repo.execute_sp("sp_GetTopProducts")
+    sql = """SELECT p.id_producto, p.nombre, p.precio, p.imagen_url,
+                    e.nombre AS negocio, e.imagen_portada_url,
+                    COALESCE(AVG(v.puntuacion::float), 0) AS puntuacion,
+                    COUNT(v.id_valoracion) AS total_votos
+             FROM Productos p
+             INNER JOIN Emprendimientos e ON e.id_emprendimiento = p.id_emprendimiento
+             LEFT JOIN Valoraciones v ON v.id_emprendimiento = e.id_emprendimiento
+             WHERE p.activo = TRUE AND e.estado_verificacion = 'aprobado'
+             GROUP BY p.id_producto, p.nombre, p.precio, p.imagen_url, e.nombre, e.imagen_portada_url
+             ORDER BY puntuacion DESC, total_votos DESC
+             LIMIT 5"""
+    rows = repo.execute_sp(sql)
     return [
         TopProductoRating(
             id_producto=r["id_producto"],
@@ -297,7 +325,29 @@ def obtener_notificaciones(
     conn=Depends(get_db_conn),
 ):
     repo = BaseRepository(conn)
-    rows = repo.execute_sp("sp_GetAdminNotifications")
+    sql = """SELECT 'pendiente' AS tipo, e.id_emprendimiento AS id_ref,
+                    e.nombre AS titulo,
+                    CONCAT(u.nombre, ' ', u.apellido) AS descripcion,
+                    e.fecha_registro AS fecha
+             FROM Emprendimientos e
+             INNER JOIN Usuarios u ON e.id_usuario = u.id_usuario
+             WHERE e.estado_verificacion = 'pendiente'
+             UNION ALL
+             SELECT 'nuevo_usuario' AS tipo, u.id_usuario AS id_ref,
+                    CONCAT(u.nombre, ' ', u.apellido) AS titulo,
+                    'Nuevo usuario registrado' AS descripcion,
+                    u.fecha_registro AS fecha
+             FROM Usuarios u
+             WHERE u.fecha_registro::date = CURRENT_DATE
+             UNION ALL
+             SELECT 'promocion_vencida' AS tipo, p.id_promocion AS id_ref,
+                    p.titulo AS titulo, e.nombre AS descripcion,
+                    p.fecha_fin AS fecha
+             FROM Promociones p
+             INNER JOIN Emprendimientos e ON p.id_emprendimiento = e.id_emprendimiento
+             WHERE p.fecha_fin < NOW() AND p.estado = 'activa'
+             ORDER BY fecha DESC"""
+    rows = repo.execute_sp(sql)
     return [
         NotificacionItem(
             tipo=r["tipo"],
@@ -351,10 +401,9 @@ def aprobar_emprendimiento(
     conn=Depends(get_db_conn),
 ):
     repo = BusinessRepository(conn)
-    try:
-        repo.update_status(id_emprendimiento, "aprobado")
-    except Exception as e:
-        raise HTTPException(404, str(e))
+    result = repo.update_status(id_emprendimiento, "aprobado")
+    if not result:
+        raise HTTPException(404, "Emprendimiento no encontrado")
     conn.commit()
     return MessageResponse(message="Emprendimiento aprobado exitosamente")
 
@@ -369,10 +418,9 @@ def rechazar_emprendimiento(
     if not data.motivo or len(data.motivo.strip()) < 20:
         raise HTTPException(400, "El motivo del rechazo debe tener al menos 20 caracteres")
     repo = BusinessRepository(conn)
-    try:
-        repo.update_status(id_emprendimiento, "rechazado", data.motivo.strip())
-    except Exception as e:
-        raise HTTPException(404, str(e))
+    result = repo.update_status(id_emprendimiento, "rechazado", data.motivo.strip())
+    if not result:
+        raise HTTPException(404, "Emprendimiento no encontrado")
     conn.commit()
     return MessageResponse(message="Emprendimiento rechazado")
 
@@ -389,21 +437,15 @@ def admin_actualizar_emprendimiento(
     estado = update_data.pop("estado_verificacion", None)
 
     if estado:
-        try:
-            repo.update_status(id_emprendimiento, estado)
-        except Exception:
+        result = repo.update_status(id_emprendimiento, estado)
+        if not result:
             raise HTTPException(404, "Emprendimiento no encontrado")
 
     if update_data:
-        try:
-            biz = repo.get_by_id(id_emprendimiento)
-            if biz:
-                id_usuario = biz.get("id_usuario") or 0
-                repo.update(id_emprendimiento, id_usuario, update_data)
-        except Exception as e:
-            if "Categoría no encontrada" in str(e):
-                raise HTTPException(404, "Categoría no encontrada")
-            raise HTTPException(404, str(e))
+        biz = repo.get_by_id(id_emprendimiento)
+        if biz:
+            id_usuario = biz.get("id_usuario") or 0
+            repo.update(id_emprendimiento, id_usuario, update_data)
 
     conn.commit()
     return MessageResponse(message="Emprendimiento actualizado correctamente")
@@ -416,10 +458,9 @@ def admin_eliminar_emprendimiento(
     conn=Depends(get_db_conn),
 ):
     repo = BusinessRepository(conn)
-    biz = repo.get_by_id(id_emprendimiento)
-    if not biz:
+    result = repo.update_status(id_emprendimiento, "rechazado", "Eliminado por administrador")
+    if not result:
         raise HTTPException(404, "Emprendimiento no encontrado")
-    repo.update_status(id_emprendimiento, "rechazado", "Eliminado por administrador")
     conn.commit()
     return MessageResponse(message="Emprendimiento eliminado correctamente")
 
@@ -435,9 +476,7 @@ def listar_usuarios(
     conn=Depends(get_db_conn),
 ):
     user_repo = UserRepository(conn)
-    rows = user_repo.execute_sp("sp_GetAllUsers", {
-        "page": page, "size": size, "busqueda": busqueda, "rol": rol, "estado": estado,
-    })
+    rows = user_repo.get_all(page=page, size=size, busqueda=busqueda, rol=rol, estado=estado)
 
     if not rows:
         return UserListResponse(items=[], total=0, page=page, size=size, pages=0)
@@ -553,22 +592,22 @@ def admin_actualizar_usuario(
 
     cursor = conn.cursor()
     if data.nombre is not None:
-        cursor.execute("UPDATE Usuarios SET nombre=? WHERE id_usuario=?", data.nombre.strip(), id_usuario)
+        cursor.execute("UPDATE Usuarios SET nombre = %s WHERE id_usuario = %s", (data.nombre.strip(), id_usuario))
     if data.apellido is not None:
-        cursor.execute("UPDATE Usuarios SET apellido=? WHERE id_usuario=?", data.apellido.strip(), id_usuario)
+        cursor.execute("UPDATE Usuarios SET apellido = %s WHERE id_usuario = %s", (data.apellido.strip(), id_usuario))
     cursor.close()
     if data.correo is not None:
         existe = user_repo.get_by_email(data.correo)
         if existe and existe.get("id_usuario") != id_usuario:
             raise HTTPException(400, "Este correo ya está en uso")
         cursor = conn.cursor()
-        cursor.execute("UPDATE Usuarios SET correo=? WHERE id_usuario=?", data.correo, id_usuario)
+        cursor.execute("UPDATE Usuarios SET correo = %s WHERE id_usuario = %s", (data.correo, id_usuario))
         cursor.close()
     if data.rol is not None:
         if data.rol not in ("visitante", "emprendedor", "administrador", "cliente"):
             raise HTTPException(400, "Rol no válido")
         cursor = conn.cursor()
-        cursor.execute("UPDATE Usuarios SET rol=? WHERE id_usuario=?", data.rol, id_usuario)
+        cursor.execute("UPDATE Usuarios SET rol = %s WHERE id_usuario = %s", (data.rol, id_usuario))
         cursor.close()
     if data.estado is not None:
         if data.estado not in ("activo", "inactivo", "suspendido"):

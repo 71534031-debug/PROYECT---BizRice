@@ -9,7 +9,7 @@ class Venta(Base):
     id_emprendimiento = Column(Integer, ForeignKey("Emprendimientos.id_emprendimiento"), nullable=False)
     total         = Column(Numeric(10,2), nullable=False, default=0)
     estado        = Column(String(20), nullable=False, default="pendiente")
-    fecha_creacion = Column(DateTime, server_default=func.getdate())
+    fecha_creacion = Column(DateTime, server_default=func.now())
 
     usuario        = relationship("Usuario", foreign_keys=[id_usuario])
     emprendimiento = relationship("Emprendimiento", foreign_keys=[id_emprendimiento])

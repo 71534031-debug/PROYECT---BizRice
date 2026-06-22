@@ -11,7 +11,7 @@ class Valoracion(Base):
     id_usuario        = Column(Integer,      ForeignKey("Usuarios.id_usuario"),              nullable=False)
     id_emprendimiento = Column(Integer,      ForeignKey("Emprendimientos.id_emprendimiento"), nullable=False)
     puntuacion        = Column(SmallInteger, nullable=False)
-    fecha             = Column(DateTime,     server_default=func.getdate())
+    fecha             = Column(DateTime,     server_default=func.now())
 
     usuario        = relationship("Usuario")
     emprendimiento = relationship("Emprendimiento", back_populates="valoraciones")

@@ -26,7 +26,13 @@ class CategoriesListResponse(BaseModel):
 @router.get("", response_model=CategoriesListResponse)
 def listar_categorias(conn=Depends(get_db_conn)):
     repo = BaseRepository(conn)
-    rows = repo.execute_sp("sp_GetCategories")
+    sql = """SELECT c.id_categoria, c.nombre, c.descripcion, c.icono_url,
+                    COUNT(e.id_emprendimiento) AS total_emprendimientos
+             FROM Categorias c
+             LEFT JOIN Emprendimientos e ON c.id_categoria = e.id_categoria AND e.estado_verificacion = 'aprobado'
+             GROUP BY c.id_categoria, c.nombre, c.descripcion, c.icono_url
+             ORDER BY c.nombre ASC"""
+    rows = repo.execute_sp(sql)
     items = [
         CategoryResponse(
             id_categoria=r["id_categoria"],

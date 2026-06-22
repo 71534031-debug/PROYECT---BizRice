@@ -88,14 +88,32 @@ def listar_ventas(
     elif user.get("rol") == "administrador" and id_emprendimiento:
         busqueda_id = id_emprendimiento
     else:
-        # Sin filtro — SP ya maneja permisos
-        pass
+        busqueda_id = None
+
+    if busqueda_id is None:
+        return VentaListResponse(items=[], total=0, page=page, size=size, pages=0)
+
+    offset = (page - 1) * size
+    sql = """WITH filtered AS (
+        SELECT v.id_venta, v.total, v.estado, v.fecha_creacion,
+               u.id_usuario, u.nombre AS cliente_nombre, u.apellido AS cliente_apellido
+        FROM Ventas v
+        INNER JOIN Usuarios u ON v.id_usuario = u.id_usuario
+        WHERE v.id_emprendimiento = %(id_emprendimiento)s
+          AND (%(estado)s IS NULL OR v.estado = %(estado)s)
+    )
+    SELECT *, (SELECT COUNT(*) FROM filtered) AS total,
+           %(size)s AS size, %(page)s AS page,
+           CEIL((SELECT COUNT(*)::decimal FROM filtered) / NULLIF(%(size)s, 0)) AS pages
+    FROM filtered
+    ORDER BY fecha_creacion DESC
+    LIMIT %(size)s OFFSET %(offset)s"""
 
     repo = BaseRepository(conn)
     try:
-        rows = repo.execute_sp("sp_GetSalesByBusiness", {
-            "id_emprendimiento": busqueda_id if user.get("rol") == "emprendedor" else (id_emprendimiento or 0),
-            "page": page, "size": size, "estado": estado,
+        rows = repo.execute_sp(sql, {
+            "id_emprendimiento": busqueda_id,
+            "page": page, "size": size, "offset": offset, "estado": estado,
         })
     except Exception as e:
         logger = logging.getLogger(__name__)
@@ -111,8 +129,8 @@ def listar_ventas(
             VentaResponse(
                 id_venta=r["id_venta"],
                 id_usuario=r["id_usuario"],
-                id_emprendimiento=r.get("id_emprendimiento", 0),
-                negocio_nombre=r.get("negocio_nombre") or "",
+                id_emprendimiento=busqueda_id,
+                negocio_nombre="",
                 total=float(r.get("total", 0)),
                 estado=r.get("estado", "pendiente"),
                 fecha_creacion=r.get("fecha_creacion") or datetime.now(),
@@ -135,10 +153,13 @@ def obtener_venta(
 ):
     user = _get_user_from_header(authorization, conn)
     repo = BaseRepository(conn)
-    rows = repo.execute_sp("sp_GetSalesByBusiness", {
-        "id_emprendimiento": 0, "page": 1, "size": 1, "estado": None,
-    })
-    # NOTA: Para detalle real, crear sp_GetSaleById
+    sql = """SELECT v.id_venta, v.total, v.estado, v.fecha_creacion,
+                    u.id_usuario
+             FROM Ventas v
+             INNER JOIN Usuarios u ON v.id_usuario = u.id_usuario
+             WHERE v.id_venta = %(id_venta)s
+             LIMIT 1"""
+    rows = repo.execute_sp(sql, {"id_venta": id_venta})
     if not rows:
         raise HTTPException(404, "Venta no encontrada")
 
@@ -146,8 +167,8 @@ def obtener_venta(
     return VentaResponse(
         id_venta=r["id_venta"],
         id_usuario=r.get("id_usuario", 0),
-        id_emprendimiento=r.get("id_emprendimiento", 0),
-        negocio_nombre=r.get("negocio_nombre") or "",
+        id_emprendimiento=0,
+        negocio_nombre="",
         total=float(r.get("total", 0)),
         estado=r.get("estado", "pendiente"),
         fecha_creacion=r.get("fecha_creacion") or datetime.now(),
@@ -165,7 +186,7 @@ def crear_venta(
     if not data.productos:
         raise HTTPException(400, "Debe incluir al menos un producto")
 
-    raise HTTPException(501, "Creación de ventas requiere SP adicional sp_CreateSale")
+    raise HTTPException(501, "Creación de ventas requiere endpoint adicional")
 
 
 @router.put("/{id_venta}/status", response_model=MessageResponse)

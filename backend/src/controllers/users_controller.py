@@ -47,9 +47,7 @@ def listar_usuarios_publicos(
     conn=Depends(get_db_conn),
 ):
     user_repo = UserRepository(conn)
-    rows = user_repo.execute_sp("sp_GetAllUsers", {
-        "page": page, "size": size, "rol": rol, "estado": "activo",
-    })
+    rows = user_repo.get_all(page=page, size=size, rol=rol, estado="activo")
 
     if not rows:
         return UserListResponse(items=[], total=0, page=page, size=size, pages=0)
@@ -110,13 +108,10 @@ def actualizar_perfil(
         updates["avatar_url"] = data.avatar_url
 
     if updates:
-        user_repo.execute_sp("sp_UpdateUserProfile", {
-            "id_usuario": user["id_usuario"],
-            "nombre": updates.get("nombre"),
-            "apellido": updates.get("apellido"),
-            "correo": updates.get("correo"),
-            "avatar_url": updates.get("avatar_url"),
-        })
+        user_repo.update_profile(
+            id_usuario=user["id_usuario"],
+            **updates,
+        )
         conn.commit()
 
     return MessageResponse(message="Perfil actualizado correctamente")
