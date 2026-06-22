@@ -266,6 +266,73 @@ def _run_seed():
         connection_pool.putconn(conn)
 
 
+def _update_images():
+    conn = connection_pool.getconn()
+    try:
+        cur = conn.cursor()
+        img_base = 'https://placehold.co/800x500/6f42c1/ffffff?text='
+        updates = [
+            ('Café Central Huancayo', 'Cafe+Central+Huancayo'),
+            ('Textiles Mantaro', 'Textiles+Mantaro'),
+            ('Artesanías del Valle', 'Artesanias+del+Valle'),
+            ('Restaurante El Mirador', 'Restaurante+El+Mirador'),
+            ('TechSolutions Huancayo', 'TechSolutions+Huancayo'),
+            ('Turismo Aventura Junín', 'Turismo+Aventura+Junin'),
+            ('Panadería San Agustín', 'Panaderia+San+Agustin'),
+            ('Estudio Contable Castro', 'Estudio+Contable+Castro'),
+            ('Vivero Los Andes', 'Vivero+Los+Andes'),
+            ('Moda Andina Boutique', 'Moda+Andina+Boutique'),
+        ]
+        for name, slug in updates:
+            cur.execute("UPDATE Emprendimientos SET imagen_portada_url = %s WHERE nombre = %s AND imagen_portada_url IS NULL",
+                       (f'{img_base}{slug}', name))
+        conn.commit()
+
+        pimg = 'https://placehold.co/400x400/eeeeee/6f42c1?text='
+        cur.execute("""UPDATE Productos SET imagen_url = CONCAT(%s, REPLACE(nombre, ' ', '+'))
+                       WHERE imagen_url IS NULL""", (pimg,))
+        conn.commit()
+        logger.info("Imágenes placeholder actualizadas")
+    except Exception as e:
+        conn.rollback()
+        logger.warning(f"Error actualizando imágenes: {e}")
+    finally:
+        connection_pool.putconn(conn)
+
+
+def _seed_pending_businesses():
+    conn = connection_pool.getconn()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM Emprendimientos WHERE estado_verificacion = 'pendiente'")
+        if cur.fetchone()[0] > 0:
+            conn.close()
+            return
+
+        cur.execute("SELECT id_usuario FROM Usuarios WHERE correo = 'marco.solis@email.com'")
+        uid = cur.fetchone()[0]
+        img_base = 'https://placehold.co/800x500/ffc107/000000?text='
+
+        pendientes = [
+            (uid, 1, 'Quesería Artesanal del Valle', 'Quesos frescos y madurados elaborados con leche de vacas criadas en el Valle del Mantaro. Productos 100% naturales.', '965111111', 'Jr. Comercio 123', 'Huancayo', f'{img_base}Queseria+Artesanal'),
+            (uid, 7, 'Studio Belleza Huancayo', 'Servicios de estética, manicure, pedicure y tratamientos faciales. Productos de primera calidad.', '965222222', 'Av. Mariscal Castilla 456', 'El Tambo', f'{img_base}Studio+Belleza'),
+            (uid, 9, 'Muebles Wanka', 'Muebles de madera tallada a mano. Diseños tradicionales y modernos para tu hogar.', '965333333', 'Carretera Central 789', 'Chilca', f'{img_base}Muebles+Wanka'),
+            (uid, 5, 'Agencia Viajes Horizonte', 'Paquetes turísticos personalizados para conocer los mejores destinos de la región Junín.', '965444444', 'Jr. Real 321', 'Huancayo', f'{img_base}Agencia+Viajes'),
+        ]
+        for e in pendientes:
+            uid, cid, nom, desc, tel, dir_, dist, img = e
+            cur.execute("""INSERT INTO Emprendimientos (id_usuario, id_categoria, nombre, descripcion, telefono, direccion, distrito, estado_verificacion, imagen_portada_url)
+                           VALUES (%s, %s, %s, %s, %s, %s, %s, 'pendiente', %s)""", e)
+
+        conn.commit()
+        logger.info("4 negocios en estado 'pendiente' creados para revisión del admin")
+    except Exception as e:
+        conn.rollback()
+        logger.warning(f"Error creando negocios pendientes: {e}")
+    finally:
+        connection_pool.putconn(conn)
+
+
 @app.on_event("startup")
 def startup():
     Base.metadata.create_all(bind=engine)
@@ -285,6 +352,8 @@ def startup():
             _run_seed()
         else:
             logger.info(f"BD ya tiene datos ({count} emprendimientos) — saltando seed")
+            _update_images()
+            _seed_pending_businesses()
     except Exception as e:
         logger.warning(f"No se pudo verificar/seed la BD: {e}")
 
