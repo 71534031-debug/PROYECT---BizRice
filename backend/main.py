@@ -2,7 +2,8 @@ import os
 import sys
 import logging
 
-from fastapi import FastAPI, Request
+from html import escape as html_escape
+from fastapi import FastAPI, Request, Query
 from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from slowapi import _rate_limit_exceeded_handler
@@ -143,7 +144,7 @@ def _run_seed():
         uid_pedro = cur.fetchone()[0]
 
         # Emprendimientos
-        img_base = 'https://placehold.co/800x500/6f42c1/ffffff'
+        img_base = 'https://proyect-bizrice-1.onrender.com/api/v1/placeholder'
         emprendimientos = [
             (uid_marco, 1, 'Café Central Huancayo', 'Cafetería especializada en granos de altura del Valle del Mantaro.', '964123456', 'Calle Real 450', 'Huancayo', '08:00', '21:00', f'{img_base}?text=Cafe+Central+Huancayo'),
             (uid_elena, 2, 'Textiles Mantaro', 'Confecciones artesanales con lana de alpaca seleccionada.', '964234567', 'Jr. Loreto 234', 'El Tambo', None, None, f'{img_base}?text=Textiles+Mantaro'),
@@ -167,37 +168,37 @@ def _run_seed():
         conn.commit()
 
         # Productos por negocio (con imágenes placeholder)
-        pimg = 'https://placehold.co/400x400/eeeeee/6f42c1'
+        pimg = 'https://proyect-bizrice-1.onrender.com/api/v1/placeholder'
         productos = [
-            (biz_ids[0], 'Latte de la Casa', 'Café latte con leche vaporizada', 12.00, 50, 'disponible', f'{pimg}?text=Latte'),
-            (biz_ids[0], 'Tostado Especial', 'Café tostado artesanal 250g', 16.50, 30, 'disponible', f'{pimg}?text=Tostado'),
-            (biz_ids[0], 'Cheesecake de Maracuyá', 'Porción de cheesecake', 8.00, 20, 'disponible', f'{pimg}?text=Cheesecake'),
-            (biz_ids[1], 'Manta Huancaína Premium', 'Manta artesanal de alpaca premium', 120.00, 15, 'bajo_stock', f'{pimg}?text=Manta'),
-            (biz_ids[1], 'Chalina de Alpaca', 'Chalina suave de alpaca', 65.00, 25, 'disponible', f'{pimg}?text=Chalina'),
-            (biz_ids[1], 'Guantes Artesanales', 'Guantes tejidos a mano', 35.00, 40, 'disponible', f'{pimg}?text=Guantes'),
-            (biz_ids[2], 'Mate Burilado Grande', 'Mate burilado tamaño grande', 85.00, 10, 'bajo_stock', f'{pimg}?text=Mate+Burilado'),
-            (biz_ids[2], 'Retablo Ayacuchano', 'Retablo artesanal tradicional', 150.00, 5, 'bajo_stock', f'{pimg}?text=Retablo'),
-            (biz_ids[2], 'Cerámica Decorativa', 'Cerámica pintada a mano', 45.00, 20, 'disponible', f'{pimg}?text=Ceramica'),
-            (biz_ids[3], 'Pachamanca Familiar', 'Pachamanca para 4 personas', 85.00, 10, 'disponible', f'{pimg}?text=Pachamanca'),
-            (biz_ids[3], 'Trucha al Vapor', 'Trucha fresca del Mantaro', 35.00, 20, 'disponible', f'{pimg}?text=Trucha'),
-            (biz_ids[3], 'Caldo de Gallina', 'Caldo de gallina de corral', 18.00, 30, 'disponible', f'{pimg}?text=Caldo+Gallina'),
-            (biz_ids[4], 'Diseño Web', 'Desarrollo web responsive', 800.00, 999, 'disponible', f'{pimg}?text=Diseno+Web'),
-            (biz_ids[4], 'App Móvil', 'Desarrollo de aplicación móvil', 2500.00, 999, 'disponible', f'{pimg}?text=App+Movil'),
-            (biz_ids[5], 'Tour Huancaya 2 días', 'Tour completo 2d/1n', 250.00, 50, 'disponible', f'{pimg}?text=Tour+Huancaya'),
-            (biz_ids[5], 'City Tour Huancayo', 'City Tour medio día', 45.00, 100, 'disponible', f'{pimg}?text=City+Tour'),
-            (biz_ids[5], 'Tour Reserva Junín', 'Tour Reserva Nacional', 180.00, 50, 'disponible', f'{pimg}?text=Reserva+Junin'),
-            (biz_ids[6], 'Pan de Masa Madre', 'Pan artesanal 500g', 4.00, 100, 'disponible', f'{pimg}?text=Pan+Masa+Madre'),
-            (biz_ids[6], 'Torta de Zanahoria', 'Torta con glaseado', 25.00, 15, 'bajo_stock', f'{pimg}?text=Torta'),
-            (biz_ids[6], 'Empanadas', 'Empanadas de horno surtidas', 3.00, 80, 'disponible', f'{pimg}?text=Empanadas'),
-            (biz_ids[7], 'Contabilidad Mensual', 'Servicio contable mensual', 200.00, 999, 'disponible', f'{pimg}?text=Contabilidad'),
-            (biz_ids[7], 'Declaración Anual', 'Declaración anual', 350.00, 999, 'disponible', f'{pimg}?text=DT+Anual'),
-            (biz_ids[7], 'Planillas', 'Gestión planillas mensuales', 150.00, 999, 'disponible', f'{pimg}?text=Planillas'),
-            (biz_ids[8], 'Planta Ornamental', 'Planta en maceta', 15.00, 200, 'disponible', f'{pimg}?text=Planta'),
-            (biz_ids[8], 'Frutal Injertado', 'Árbol frutal injertado', 35.00, 50, 'disponible', f'{pimg}?text=Frutal'),
-            (biz_ids[8], 'Servicio Jardinería', 'Jardinería completo', 120.00, 999, 'disponible', f'{pimg}?text=Jardineria'),
-            (biz_ids[9], 'Vestido Andino', 'Vestido con diseños andinos', 180.00, 10, 'bajo_stock', f'{pimg}?text=Vestido+Andino'),
-            (biz_ids[9], 'Cartera Artesanal', 'Cartera tejida a mano', 95.00, 15, 'disponible', f'{pimg}?text=Cartera'),
-            (biz_ids[9], 'Blusa Bordada', 'Blusa con bordados tradicionales', 75.00, 20, 'disponible', f'{pimg}?text=Blusa'),
+            (biz_ids[0], 'Latte de la Casa', 'Café latte con leche vaporizada', 12.00, 50, 'disponible', f'{pimg}?text=Latte&w=400&h=400'),
+            (biz_ids[0], 'Tostado Especial', 'Café tostado artesanal 250g', 16.50, 30, 'disponible', f'{pimg}?text=Tostado&w=400&h=400'),
+            (biz_ids[0], 'Cheesecake de Maracuyá', 'Porción de cheesecake', 8.00, 20, 'disponible', f'{pimg}?text=Cheesecake&w=400&h=400'),
+            (biz_ids[1], 'Manta Huancaína Premium', 'Manta artesanal de alpaca premium', 120.00, 15, 'bajo_stock', f'{pimg}?text=Manta&w=400&h=400'),
+            (biz_ids[1], 'Chalina de Alpaca', 'Chalina suave de alpaca', 65.00, 25, 'disponible', f'{pimg}?text=Chalina&w=400&h=400'),
+            (biz_ids[1], 'Guantes Artesanales', 'Guantes tejidos a mano', 35.00, 40, 'disponible', f'{pimg}?text=Guantes&w=400&h=400'),
+            (biz_ids[2], 'Mate Burilado Grande', 'Mate burilado tamaño grande', 85.00, 10, 'bajo_stock', f'{pimg}?text=Mate+Burilado&w=400&h=400'),
+            (biz_ids[2], 'Retablo Ayacuchano', 'Retablo artesanal tradicional', 150.00, 5, 'bajo_stock', f'{pimg}?text=Retablo&w=400&h=400'),
+            (biz_ids[2], 'Cerámica Decorativa', 'Cerámica pintada a mano', 45.00, 20, 'disponible', f'{pimg}?text=Ceramica&w=400&h=400'),
+            (biz_ids[3], 'Pachamanca Familiar', 'Pachamanca para 4 personas', 85.00, 10, 'disponible', f'{pimg}?text=Pachamanca&w=400&h=400'),
+            (biz_ids[3], 'Trucha al Vapor', 'Trucha fresca del Mantaro', 35.00, 20, 'disponible', f'{pimg}?text=Trucha&w=400&h=400'),
+            (biz_ids[3], 'Caldo de Gallina', 'Caldo de gallina de corral', 18.00, 30, 'disponible', f'{pimg}?text=Caldo+Gallina&w=400&h=400'),
+            (biz_ids[4], 'Diseño Web', 'Desarrollo web responsive', 800.00, 999, 'disponible', f'{pimg}?text=Diseno+Web&w=400&h=400'),
+            (biz_ids[4], 'App Móvil', 'Desarrollo de aplicación móvil', 2500.00, 999, 'disponible', f'{pimg}?text=App+Movil&w=400&h=400'),
+            (biz_ids[5], 'Tour Huancaya 2 días', 'Tour completo 2d/1n', 250.00, 50, 'disponible', f'{pimg}?text=Tour+Huancaya&w=400&h=400'),
+            (biz_ids[5], 'City Tour Huancayo', 'City Tour medio día', 45.00, 100, 'disponible', f'{pimg}?text=City+Tour&w=400&h=400'),
+            (biz_ids[5], 'Tour Reserva Junín', 'Tour Reserva Nacional', 180.00, 50, 'disponible', f'{pimg}?text=Reserva+Junin&w=400&h=400'),
+            (biz_ids[6], 'Pan de Masa Madre', 'Pan artesanal 500g', 4.00, 100, 'disponible', f'{pimg}?text=Pan+Masa+Madre&w=400&h=400'),
+            (biz_ids[6], 'Torta de Zanahoria', 'Torta con glaseado', 25.00, 15, 'bajo_stock', f'{pimg}?text=Torta&w=400&h=400'),
+            (biz_ids[6], 'Empanadas', 'Empanadas de horno surtidas', 3.00, 80, 'disponible', f'{pimg}?text=Empanadas&w=400&h=400'),
+            (biz_ids[7], 'Contabilidad Mensual', 'Servicio contable mensual', 200.00, 999, 'disponible', f'{pimg}?text=Contabilidad&w=400&h=400'),
+            (biz_ids[7], 'Declaración Anual', 'Declaración anual', 350.00, 999, 'disponible', f'{pimg}?text=DT+Anual&w=400&h=400'),
+            (biz_ids[7], 'Planillas', 'Gestión planillas mensuales', 150.00, 999, 'disponible', f'{pimg}?text=Planillas&w=400&h=400'),
+            (biz_ids[8], 'Planta Ornamental', 'Planta en maceta', 15.00, 200, 'disponible', f'{pimg}?text=Planta&w=400&h=400'),
+            (biz_ids[8], 'Frutal Injertado', 'Árbol frutal injertado', 35.00, 50, 'disponible', f'{pimg}?text=Frutal&w=400&h=400'),
+            (biz_ids[8], 'Servicio Jardinería', 'Jardinería completo', 120.00, 999, 'disponible', f'{pimg}?text=Jardineria&w=400&h=400'),
+            (biz_ids[9], 'Vestido Andino', 'Vestido con diseños andinos', 180.00, 10, 'bajo_stock', f'{pimg}?text=Vestido+Andino&w=400&h=400'),
+            (biz_ids[9], 'Cartera Artesanal', 'Cartera tejida a mano', 95.00, 15, 'disponible', f'{pimg}?text=Cartera&w=400&h=400'),
+            (biz_ids[9], 'Blusa Bordada', 'Blusa con bordados tradicionales', 75.00, 20, 'disponible', f'{pimg}?text=Blusa&w=400&h=400'),
         ]
         for p in productos:
             cur.execute("""INSERT INTO Productos (id_emprendimiento, nombre, descripcion, precio, stock, estado_stock, imagen_url)
@@ -270,26 +271,26 @@ def _update_images():
     conn = connection_pool.getconn()
     try:
         cur = conn.cursor()
-        img_base = 'https://placehold.co/800x500/6f42c1/ffffff?text='
-        updates = [
-            ('Café Central Huancayo', 'Cafe+Central+Huancayo'),
-            ('Textiles Mantaro', 'Textiles+Mantaro'),
-            ('Artesanías del Valle', 'Artesanias+del+Valle'),
-            ('Restaurante El Mirador', 'Restaurante+El+Mirador'),
-            ('TechSolutions Huancayo', 'TechSolutions+Huancayo'),
-            ('Turismo Aventura Junín', 'Turismo+Aventura+Junin'),
-            ('Panadería San Agustín', 'Panaderia+San+Agustin'),
-            ('Estudio Contable Castro', 'Estudio+Contable+Castro'),
-            ('Vivero Los Andes', 'Vivero+Los+Andes'),
-            ('Moda Andina Boutique', 'Moda+Andina+Boutique'),
+        base = 'https://proyect-bizrice-1.onrender.com/api/v1/placeholder?text='
+        names = [
+            'Café Central Huancayo',
+            'Textiles Mantaro',
+            'Artesanías del Valle',
+            'Restaurante El Mirador',
+            'TechSolutions Huancayo',
+            'Turismo Aventura Junín',
+            'Panadería San Agustín',
+            'Estudio Contable Castro',
+            'Vivero Los Andes',
+            'Moda Andina Boutique',
         ]
-        for name, slug in updates:
+        for name in names:
             cur.execute("UPDATE Emprendimientos SET imagen_portada_url = %s WHERE nombre = %s AND imagen_portada_url IS NULL",
-                       (f'{img_base}{slug}', name))
+                       (base + name.replace(' ', '+'), name))
         conn.commit()
 
-        pimg = 'https://placehold.co/400x400/eeeeee/6f42c1?text='
-        cur.execute("""UPDATE Productos SET imagen_url = CONCAT(%s, REPLACE(nombre, ' ', '+'))
+        pimg = 'https://proyect-bizrice-1.onrender.com/api/v1/placeholder?text='
+        cur.execute("""UPDATE Productos SET imagen_url = CONCAT(%s, REPLACE(nombre, ' ', '+'), '&w=400&h=400')
                        WHERE imagen_url IS NULL""", (pimg,))
         conn.commit()
         logger.info("Imágenes placeholder actualizadas")
@@ -311,7 +312,7 @@ def _seed_pending_businesses():
 
         cur.execute("SELECT id_usuario FROM Usuarios WHERE correo = 'marco.solis@email.com'")
         uid = cur.fetchone()[0]
-        img_base = 'https://placehold.co/800x500/ffc107/000000?text='
+        img_base = 'https://proyect-bizrice-1.onrender.com/api/v1/placeholder?text='
 
         pendientes = [
             (uid, 1, 'Quesería Artesanal del Valle', 'Quesos frescos y madurados elaborados con leche de vacas criadas en el Valle del Mantaro. Productos 100% naturales.', '965111111', 'Jr. Comercio 123', 'Huancayo', f'{img_base}Queseria+Artesanal'),
@@ -356,6 +357,17 @@ def startup():
             _seed_pending_businesses()
     except Exception as e:
         logger.warning(f"No se pudo verificar/seed la BD: {e}")
+
+
+@app.get("/api/v1/placeholder")
+def placeholder(text: str = Query("BizRise"), w: int = Query(800), h: int = Query(500)):
+    safe = html_escape(text)
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}">
+  <rect width="100%" height="100%" fill="#6f42c1"/>
+  <text x="50%" y="45%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="{max(24, w//18)}">{safe}</text>
+  <text x="50%" y="60%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff80" font-family="Arial, sans-serif" font-size="{max(14, w//30)}" font-weight="300">BizRise</text>
+</svg>"""
+    return Response(content=svg, media_type="image/svg+xml")
 
 
 @app.get("/")

@@ -175,12 +175,12 @@ import { Autoplay, Pagination } from 'swiper/modules';
                 <a [routerLink]="'/business/' + biz.id_emprendimiento" class="text-decoration-none">
                   <div class="card card-hover shadow-sm h-100">
                     @if (biz.imagen_portada_url) {
-                      <img [src]="biz.imagen_portada_url" class="card-img-top" style="height:160px;object-fit:cover" [alt]="biz.nombre" [attr.loading]="'lazy'" (error)="biz.imagen_portada_url = null">
+                      <img [src]="biz.imagen_portada_url" class="card-img-top" style="height:160px;object-fit:cover" [alt]="biz.nombre" [attr.loading]="'lazy'">
                     } @else {
                       <div class="img-placeholder" style="height:160px"><i class="bi bi-shop fs-1"></i></div>
                     }
                     <div class="card-body">
-                      <span class="badge bg-primary bg-opacity-10 text-primary mb-2">{{ biz.categoria }}</span>
+                      <span class="badge bg-primary text-white mb-2">{{ biz.categoria }}</span>
                       <h6 class="fw-bold mb-1">{{ biz.nombre }}</h6>
                       @if (biz.descripcion) {
                         <p class="small text-muted mb-2">{{ biz.descripcion.substring(0,100) }}{{ biz.descripcion.length > 100 ? '...' : '' }}</p>

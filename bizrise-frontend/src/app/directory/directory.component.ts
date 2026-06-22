@@ -116,7 +116,7 @@ import { CategoryService } from '../services/category.service';
                     <div class="img-placeholder" style="height:140px"><i class="bi bi-shop"></i></div>
                   }
                   <div class="card-body d-flex flex-column">
-                    <span class="badge bg-primary bg-opacity-10 text-primary mb-1 align-self-start">{{ biz.categoria }}</span>
+                    <span class="badge bg-primary text-white mb-1 align-self-start">{{ biz.categoria }}</span>
                     <h6 class="fw-bold mb-1" [innerHTML]="highlightText(biz.nombre)"></h6>
                     @if (biz.descripcion) {
                       <p class="small text-muted mb-2 flex-grow-1" [innerHTML]="highlightText(biz.descripcion.length > 100 ? (biz.descripcion.substring(0,100) + '...') : biz.descripcion)"></p>
