@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: bizrice-backend
+
+    env: docker
+
+    dockerfilePath: ./backend/Dockerfile
