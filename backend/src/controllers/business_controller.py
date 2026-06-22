@@ -2,12 +2,15 @@ from fastapi import APIRouter, Depends, HTTPException, Header, Query
 from pydantic import BaseModel
 from datetime import datetime, time, date, timezone
 from typing import Optional
+import logging, traceback, psycopg2
 
 from src.config.db import get_db_conn
 from src.repositories.business_repository import BusinessRepository
 from src.repositories.product_repository import ProductRepository
 from src.repositories.review_repository import ReviewRepository
 from src.controllers.auth_controller import get_current_user
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -342,3 +345,44 @@ def crear_resena(
 
     conn.commit()
     return CreateReviewResponse(message="Reseña publicada exitosamente")
+
+
+@router.get("/debug/test", include_in_schema=False)
+def debug_test(conn=Depends(get_db_conn)):
+    import traceback
+    results = {}
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT table_name FROM information_schema.tables WHERE table_schema='public' ORDER BY table_name")
+        results["tablas"] = [r[0] for r in cursor.fetchall()]
+        cursor.close()
+    except Exception as e:
+        results["tablas_error"] = str(e)
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM Emprendimientos WHERE estado_verificacion='aprobado'")
+        results["count_aprobados"] = cursor.fetchone()[0]
+        cursor.close()
+    except Exception as e:
+        results["count_error"] = str(e)
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM Valoraciones")
+        results["count_valoraciones"] = cursor.fetchone()[0]
+        cursor.close()
+    except Exception as e:
+        results["valoraciones_error"] = str(e)
+
+    try:
+        from src.repositories.business_repository import BusinessRepository
+        repo = BusinessRepository(conn)
+        result = repo.get_all(busqueda=None, id_categoria=None, distrito=None, orden="reciente", page=1, size=10)
+        results["get_all_ok"] = True
+        results["total_items"] = result["total"]
+    except Exception as e:
+        results["get_all_error"] = str(e)
+        results["get_all_traceback"] = traceback.format_exc()
+
+    return results
