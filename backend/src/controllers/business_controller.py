@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Header, Query
 from pydantic import BaseModel
 from datetime import datetime, time, date, timezone
 from typing import Optional
-import logging, traceback, psycopg2
+import logging
 
 from src.config.db import get_db_conn
 from src.repositories.business_repository import BusinessRepository
@@ -173,11 +173,16 @@ def listar_emprendimientos(
     orden: Optional[str] = None,
     conn=Depends(get_db_conn),
 ):
-    repo = BusinessRepository(conn)
-    result = repo.get_all(
-        busqueda=busqueda, id_categoria=categoria,
-        distrito=distrito, orden=orden, page=page, size=size,
-    )
+    try:
+        repo = BusinessRepository(conn)
+        result = repo.get_all(
+            busqueda=busqueda, id_categoria=categoria,
+            distrito=distrito, orden=orden, page=page, size=size,
+        )
+    except Exception as e:
+        logger.error(f"Error al listar emprendimientos: {e}")
+        raise HTTPException(500, f"Error al obtener negocios: {str(e)}")
+
     items = [
         BusinessListItem(
             id_emprendimiento=r["id_emprendimiento"],
@@ -345,44 +350,3 @@ def crear_resena(
 
     conn.commit()
     return CreateReviewResponse(message="Reseña publicada exitosamente")
-
-
-@router.get("/debug/test", include_in_schema=False)
-def debug_test(conn=Depends(get_db_conn)):
-    import traceback
-    results = {}
-    try:
-        cursor = conn.cursor()
-        cursor.execute("SELECT table_name FROM information_schema.tables WHERE table_schema='public' ORDER BY table_name")
-        results["tablas"] = [r[0] for r in cursor.fetchall()]
-        cursor.close()
-    except Exception as e:
-        results["tablas_error"] = str(e)
-
-    try:
-        cursor = conn.cursor()
-        cursor.execute("SELECT COUNT(*) FROM Emprendimientos WHERE estado_verificacion='aprobado'")
-        results["count_aprobados"] = cursor.fetchone()[0]
-        cursor.close()
-    except Exception as e:
-        results["count_error"] = str(e)
-
-    try:
-        cursor = conn.cursor()
-        cursor.execute("SELECT COUNT(*) FROM Valoraciones")
-        results["count_valoraciones"] = cursor.fetchone()[0]
-        cursor.close()
-    except Exception as e:
-        results["valoraciones_error"] = str(e)
-
-    try:
-        from src.repositories.business_repository import BusinessRepository
-        repo = BusinessRepository(conn)
-        result = repo.get_all(busqueda=None, id_categoria=None, distrito=None, orden="reciente", page=1, size=10)
-        results["get_all_ok"] = True
-        results["total_items"] = result["total"]
-    except Exception as e:
-        results["get_all_error"] = str(e)
-        results["get_all_traceback"] = traceback.format_exc()
-
-    return results

@@ -7,11 +7,11 @@ class BusinessRepository(BaseRepository):
                 distrito: str | None = None, orden: str | None = None,
                 page: int = 1, size: int = 12) -> dict:
         offset = (page - 1) * size
-        order_clause = "e.fecha_registro DESC"
+        order_clause = "fecha_registro DESC"
         if orden == "valoracion":
             order_clause = "puntuacion_promedio DESC, total_valoraciones DESC"
         elif orden == "nombre":
-            order_clause = "e.nombre ASC"
+            order_clause = "nombre ASC"
 
         sql = f"""WITH resultados AS (
             SELECT
