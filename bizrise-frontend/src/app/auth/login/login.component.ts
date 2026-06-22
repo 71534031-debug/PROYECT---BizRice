@@ -90,7 +90,7 @@ export class LoginComponent {
       next: () => {
         this.loading = false;
         const role = this.authService.userRole;
-        if (role === 'admin') this.router.navigate(['/admin']);
+        if (role === 'administrador') this.router.navigate(['/admin']);
         else if (role === 'emprendedor') this.router.navigate(['/entrepreneur']);
         else this.router.navigate(['/']);
       },

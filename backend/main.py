@@ -143,63 +143,65 @@ def _run_seed():
         uid_pedro = cur.fetchone()[0]
 
         # Emprendimientos
+        img_base = 'https://placehold.co/800x500/6f42c1/ffffff'
         emprendimientos = [
-            (uid_marco, 1, 'Café Central Huancayo', 'Cafetería especializada en granos de altura del Valle del Mantaro.', '964123456', 'Calle Real 450', 'Huancayo', '08:00', '21:00'),
-            (uid_elena, 2, 'Textiles Mantaro', 'Confecciones artesanales con lana de alpaca seleccionada.', '964234567', 'Jr. Loreto 234', 'El Tambo', None, None),
-            (uid_juan, 3, 'Artesanías del Valle', 'Arte tradicional del Valle del Mantaro. Piezas únicas hechas a mano.', '964345678', 'Av. Ferrocarril 567', 'Chilca', None, None),
-            (uid_pedro, 1, 'Restaurante El Mirador', 'Tradición y modernidad en cada plato. La mejor vista del Valle.', '964456789', 'Jr. Ayacucho 123', 'Huancayo', '12:00', '22:00'),
-            (uid_roberto, 6, 'TechSolutions Huancayo', 'Desarrollo web, apps móviles y soporte técnico para empresas locales.', '964567890', 'Av. Giráldez 890', 'El Tambo', None, None),
-            (uid_carmen, 5, 'Turismo Aventura Junín', 'Tours por Huancaya, Nor Yauyos, Reserva de Junín.', '964678901', 'Calle Piura 456', 'Huancayo', None, None),
-            (uid_diego, 1, 'Panadería San Agustín', 'Pan artesanal horneado cada mañana con recetas tradicionales.', '964789012', 'Jr. Puno 789', 'San Agustín', '06:00', '20:00'),
-            (uid_silvia, 4, 'Estudio Contable Castro', 'Servicios contables, tributarios y laborales para MYPES.', '964890123', 'Av. Huancavelica 234', 'Huancayo', None, None),
-            (uid_miguel, 4, 'Vivero Los Andes', 'Plantas ornamentales, frutales y medicinales. Jardinería.', '964901234', 'Carretera Central Km 5', 'Pilcomayo', None, None),
-            (uid_ana, 2, 'Moda Andina Boutique', 'Ropa con diseños andinos contemporáneos para la mujer moderna.', '964012345', 'Jr. Lima 567', 'Huancayo', None, None),
+            (uid_marco, 1, 'Café Central Huancayo', 'Cafetería especializada en granos de altura del Valle del Mantaro.', '964123456', 'Calle Real 450', 'Huancayo', '08:00', '21:00', f'{img_base}?text=Cafe+Central+Huancayo'),
+            (uid_elena, 2, 'Textiles Mantaro', 'Confecciones artesanales con lana de alpaca seleccionada.', '964234567', 'Jr. Loreto 234', 'El Tambo', None, None, f'{img_base}?text=Textiles+Mantaro'),
+            (uid_juan, 3, 'Artesanías del Valle', 'Arte tradicional del Valle del Mantaro. Piezas únicas hechas a mano.', '964345678', 'Av. Ferrocarril 567', 'Chilca', None, None, f'{img_base}?text=Artesanias+del+Valle'),
+            (uid_pedro, 1, 'Restaurante El Mirador', 'Tradición y modernidad en cada plato. La mejor vista del Valle.', '964456789', 'Jr. Ayacucho 123', 'Huancayo', '12:00', '22:00', f'{img_base}?text=Restaurante+El+Mirador'),
+            (uid_roberto, 6, 'TechSolutions Huancayo', 'Desarrollo web, apps móviles y soporte técnico para empresas locales.', '964567890', 'Av. Giráldez 890', 'El Tambo', None, None, f'{img_base}?text=TechSolutions+Huancayo'),
+            (uid_carmen, 5, 'Turismo Aventura Junín', 'Tours por Huancaya, Nor Yauyos, Reserva de Junín.', '964678901', 'Calle Piura 456', 'Huancayo', None, None, f'{img_base}?text=Turismo+Aventura+Junin'),
+            (uid_diego, 1, 'Panadería San Agustín', 'Pan artesanal horneado cada mañana con recetas tradicionales.', '964789012', 'Jr. Puno 789', 'San Agustín', '06:00', '20:00', f'{img_base}?text=Panaderia+San+Agustin'),
+            (uid_silvia, 4, 'Estudio Contable Castro', 'Servicios contables, tributarios y laborales para MYPES.', '964890123', 'Av. Huancavelica 234', 'Huancayo', None, None, f'{img_base}?text=Estudio+Contable+Castro'),
+            (uid_miguel, 4, 'Vivero Los Andes', 'Plantas ornamentales, frutales y medicinales. Jardinería.', '964901234', 'Carretera Central Km 5', 'Pilcomayo', None, None, f'{img_base}?text=Vivero+Los+Andes'),
+            (uid_ana, 2, 'Moda Andina Boutique', 'Ropa con diseños andinos contemporáneos para la mujer moderna.', '964012345', 'Jr. Lima 567', 'Huancayo', None, None, f'{img_base}?text=Moda+Andina+Boutique'),
         ]
         biz_ids = []
         for e in emprendimientos:
-            uid, cid, nom, desc, tel, dir_, dist, ha, hc = e
-            cur.execute("""INSERT INTO Emprendimientos (id_usuario, id_categoria, nombre, descripcion, telefono, direccion, distrito, horario_apertura, horario_cierre, estado_verificacion)
-                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s::time, %s::time, 'aprobado')
+            uid, cid, nom, desc, tel, dir_, dist, ha, hc, img = e
+            cur.execute("""INSERT INTO Emprendimientos (id_usuario, id_categoria, nombre, descripcion, telefono, direccion, distrito, horario_apertura, horario_cierre, estado_verificacion, imagen_portada_url)
+                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s::time, %s::time, 'aprobado', %s)
                            RETURNING id_emprendimiento""", e)
             biz_ids.append(cur.fetchone()[0])
 
         conn.commit()
 
-        # Productos por negocio
+        # Productos por negocio (con imágenes placeholder)
+        pimg = 'https://placehold.co/400x400/eeeeee/6f42c1'
         productos = [
-            (biz_ids[0], 'Latte de la Casa', 'Café latte con leche vaporizada', 12.00, 50, 'disponible'),
-            (biz_ids[0], 'Tostado Especial', 'Café tostado artesanal 250g', 16.50, 30, 'disponible'),
-            (biz_ids[0], 'Cheesecake de Maracuyá', 'Porción de cheesecake', 8.00, 20, 'disponible'),
-            (biz_ids[1], 'Manta Huancaína Premium', 'Manta artesanal de alpaca premium', 120.00, 15, 'bajo_stock'),
-            (biz_ids[1], 'Chalina de Alpaca', 'Chalina suave de alpaca', 65.00, 25, 'disponible'),
-            (biz_ids[1], 'Guantes Artesanales', 'Guantes tejidos a mano', 35.00, 40, 'disponible'),
-            (biz_ids[2], 'Mate Burilado Grande', 'Mate burilado tamaño grande', 85.00, 10, 'bajo_stock'),
-            (biz_ids[2], 'Retablo Ayacuchano', 'Retablo artesanal tradicional', 150.00, 5, 'bajo_stock'),
-            (biz_ids[2], 'Cerámica Decorativa', 'Cerámica pintada a mano', 45.00, 20, 'disponible'),
-            (biz_ids[3], 'Pachamanca Familiar', 'Pachamanca para 4 personas', 85.00, 10, 'disponible'),
-            (biz_ids[3], 'Trucha al Vapor', 'Trucha fresca del Mantaro', 35.00, 20, 'disponible'),
-            (biz_ids[3], 'Caldo de Gallina', 'Caldo de gallina de corral', 18.00, 30, 'disponible'),
-            (biz_ids[4], 'Diseño Web', 'Desarrollo web responsive', 800.00, 999, 'disponible'),
-            (biz_ids[4], 'App Móvil', 'Desarrollo de aplicación móvil', 2500.00, 999, 'disponible'),
-            (biz_ids[5], 'Tour Huancaya 2 días', 'Tour completo 2d/1n', 250.00, 50, 'disponible'),
-            (biz_ids[5], 'City Tour Huancayo', 'City Tour medio día', 45.00, 100, 'disponible'),
-            (biz_ids[5], 'Tour Reserva Junín', 'Tour Reserva Nacional', 180.00, 50, 'disponible'),
-            (biz_ids[6], 'Pan de Masa Madre', 'Pan artesanal 500g', 4.00, 100, 'disponible'),
-            (biz_ids[6], 'Torta de Zanahoria', 'Torta con glaseado', 25.00, 15, 'bajo_stock'),
-            (biz_ids[6], 'Empanadas', 'Empanadas de horno surtidas', 3.00, 80, 'disponible'),
-            (biz_ids[7], 'Contabilidad Mensual', 'Servicio contable mensual', 200.00, 999, 'disponible'),
-            (biz_ids[7], 'Declaración Anual', 'Declaración anual', 350.00, 999, 'disponible'),
-            (biz_ids[7], 'Planillas', 'Gestión planillas mensuales', 150.00, 999, 'disponible'),
-            (biz_ids[8], 'Planta Ornamental', 'Planta en maceta', 15.00, 200, 'disponible'),
-            (biz_ids[8], 'Frutal Injertado', 'Árbol frutal injertado', 35.00, 50, 'disponible'),
-            (biz_ids[8], 'Servicio Jardinería', 'Jardinería completo', 120.00, 999, 'disponible'),
-            (biz_ids[9], 'Vestido Andino', 'Vestido con diseños andinos', 180.00, 10, 'bajo_stock'),
-            (biz_ids[9], 'Cartera Artesanal', 'Cartera tejida a mano', 95.00, 15, 'disponible'),
-            (biz_ids[9], 'Blusa Bordada', 'Blusa con bordados tradicionales', 75.00, 20, 'disponible'),
+            (biz_ids[0], 'Latte de la Casa', 'Café latte con leche vaporizada', 12.00, 50, 'disponible', f'{pimg}?text=Latte'),
+            (biz_ids[0], 'Tostado Especial', 'Café tostado artesanal 250g', 16.50, 30, 'disponible', f'{pimg}?text=Tostado'),
+            (biz_ids[0], 'Cheesecake de Maracuyá', 'Porción de cheesecake', 8.00, 20, 'disponible', f'{pimg}?text=Cheesecake'),
+            (biz_ids[1], 'Manta Huancaína Premium', 'Manta artesanal de alpaca premium', 120.00, 15, 'bajo_stock', f'{pimg}?text=Manta'),
+            (biz_ids[1], 'Chalina de Alpaca', 'Chalina suave de alpaca', 65.00, 25, 'disponible', f'{pimg}?text=Chalina'),
+            (biz_ids[1], 'Guantes Artesanales', 'Guantes tejidos a mano', 35.00, 40, 'disponible', f'{pimg}?text=Guantes'),
+            (biz_ids[2], 'Mate Burilado Grande', 'Mate burilado tamaño grande', 85.00, 10, 'bajo_stock', f'{pimg}?text=Mate+Burilado'),
+            (biz_ids[2], 'Retablo Ayacuchano', 'Retablo artesanal tradicional', 150.00, 5, 'bajo_stock', f'{pimg}?text=Retablo'),
+            (biz_ids[2], 'Cerámica Decorativa', 'Cerámica pintada a mano', 45.00, 20, 'disponible', f'{pimg}?text=Ceramica'),
+            (biz_ids[3], 'Pachamanca Familiar', 'Pachamanca para 4 personas', 85.00, 10, 'disponible', f'{pimg}?text=Pachamanca'),
+            (biz_ids[3], 'Trucha al Vapor', 'Trucha fresca del Mantaro', 35.00, 20, 'disponible', f'{pimg}?text=Trucha'),
+            (biz_ids[3], 'Caldo de Gallina', 'Caldo de gallina de corral', 18.00, 30, 'disponible', f'{pimg}?text=Caldo+Gallina'),
+            (biz_ids[4], 'Diseño Web', 'Desarrollo web responsive', 800.00, 999, 'disponible', f'{pimg}?text=Diseno+Web'),
+            (biz_ids[4], 'App Móvil', 'Desarrollo de aplicación móvil', 2500.00, 999, 'disponible', f'{pimg}?text=App+Movil'),
+            (biz_ids[5], 'Tour Huancaya 2 días', 'Tour completo 2d/1n', 250.00, 50, 'disponible', f'{pimg}?text=Tour+Huancaya'),
+            (biz_ids[5], 'City Tour Huancayo', 'City Tour medio día', 45.00, 100, 'disponible', f'{pimg}?text=City+Tour'),
+            (biz_ids[5], 'Tour Reserva Junín', 'Tour Reserva Nacional', 180.00, 50, 'disponible', f'{pimg}?text=Reserva+Junin'),
+            (biz_ids[6], 'Pan de Masa Madre', 'Pan artesanal 500g', 4.00, 100, 'disponible', f'{pimg}?text=Pan+Masa+Madre'),
+            (biz_ids[6], 'Torta de Zanahoria', 'Torta con glaseado', 25.00, 15, 'bajo_stock', f'{pimg}?text=Torta'),
+            (biz_ids[6], 'Empanadas', 'Empanadas de horno surtidas', 3.00, 80, 'disponible', f'{pimg}?text=Empanadas'),
+            (biz_ids[7], 'Contabilidad Mensual', 'Servicio contable mensual', 200.00, 999, 'disponible', f'{pimg}?text=Contabilidad'),
+            (biz_ids[7], 'Declaración Anual', 'Declaración anual', 350.00, 999, 'disponible', f'{pimg}?text=DT+Anual'),
+            (biz_ids[7], 'Planillas', 'Gestión planillas mensuales', 150.00, 999, 'disponible', f'{pimg}?text=Planillas'),
+            (biz_ids[8], 'Planta Ornamental', 'Planta en maceta', 15.00, 200, 'disponible', f'{pimg}?text=Planta'),
+            (biz_ids[8], 'Frutal Injertado', 'Árbol frutal injertado', 35.00, 50, 'disponible', f'{pimg}?text=Frutal'),
+            (biz_ids[8], 'Servicio Jardinería', 'Jardinería completo', 120.00, 999, 'disponible', f'{pimg}?text=Jardineria'),
+            (biz_ids[9], 'Vestido Andino', 'Vestido con diseños andinos', 180.00, 10, 'bajo_stock', f'{pimg}?text=Vestido+Andino'),
+            (biz_ids[9], 'Cartera Artesanal', 'Cartera tejida a mano', 95.00, 15, 'disponible', f'{pimg}?text=Cartera'),
+            (biz_ids[9], 'Blusa Bordada', 'Blusa con bordados tradicionales', 75.00, 20, 'disponible', f'{pimg}?text=Blusa'),
         ]
         for p in productos:
-            cur.execute("""INSERT INTO Productos (id_emprendimiento, nombre, descripcion, precio, stock, estado_stock)
-                           VALUES (%s, %s, %s, %s, %s, %s)""", p)
+            cur.execute("""INSERT INTO Productos (id_emprendimiento, nombre, descripcion, precio, stock, estado_stock, imagen_url)
+                           VALUES (%s, %s, %s, %s, %s, %s, %s)""", p)
 
         # Promociones
         cur.execute("""INSERT INTO Promociones (id_emprendimiento, titulo, descripcion, fecha_inicio, fecha_fin, estado)
