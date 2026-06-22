@@ -1,11 +1,9 @@
 import os
 import sys
 import logging
-from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -27,9 +25,26 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 logger = logging.getLogger(__name__)
 
 
-class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+class CORSSecureMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        response = await call_next(request)
+        if request.method == "OPTIONS":
+            return Response(status_code=200, headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "*",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Max-Age": "86400",
+            })
+        try:
+            response = await call_next(request)
+        except Exception as exc:
+            logger.error(f"Error no manejado en {request.url.path}: {exc}")
+            response = JSONResponse(
+                status_code=500,
+                content={"detail": "Error interno del servidor."},
+            )
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "*"
+        response.headers["Access-Control-Allow-Headers"] = "*"
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
@@ -45,15 +60,8 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.ORIGINS_LIST,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-logger.info(f"CORS allowed origins: {settings.ORIGINS_LIST}")
-app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(CORSSecureMiddleware)
+logger.info("CORS: permitiendo todos los orígenes")
 
 os.makedirs("uploads/negocios", exist_ok=True)
 os.makedirs("uploads/productos", exist_ok=True)
@@ -67,15 +75,6 @@ app.include_router(entrepreneur_controller.router, prefix="/api/v1/entrepreneur"
 app.include_router(admin_controller.router, prefix="/api/v1/admin", tags=["Panel Administrador"])
 app.include_router(sale_controller.router, prefix="/api/v1/sales", tags=["Ventas"])
 app.include_router(users_controller.router, prefix="/api/v1/users", tags=["Usuarios"])
-
-
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    logger.error(f"Error no manejado en {request.url.path}: {exc}")
-    return JSONResponse(
-        status_code=500,
-        content={"detail": "Error interno del servidor. Intenta nuevamente en unos minutos."},
-    )
 
 
 @app.on_event("startup")
