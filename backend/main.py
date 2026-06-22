@@ -272,27 +272,15 @@ def _update_images():
     try:
         cur = conn.cursor()
         base = 'https://proyect-bizrice-1.onrender.com/api/v1/placeholder?text='
-        names = [
-            'Café Central Huancayo',
-            'Textiles Mantaro',
-            'Artesanías del Valle',
-            'Restaurante El Mirador',
-            'TechSolutions Huancayo',
-            'Turismo Aventura Junín',
-            'Panadería San Agustín',
-            'Estudio Contable Castro',
-            'Vivero Los Andes',
-            'Moda Andina Boutique',
-        ]
-        for name in names:
-            cur.execute("UPDATE Emprendimientos SET imagen_portada_url = %s WHERE nombre = %s",
-                       (base + name.replace(' ', '+'), name))
+        cur.execute("""UPDATE Emprendimientos SET imagen_portada_url = CONCAT(%s,
+            TRANSLATE(nombre, ' áéíóúñÁÉÍÓÚÑ', '-aeiounAEIOUN'))""",
+            (base,))
         conn.commit()
-
-        pimg = 'https://proyect-bizrice-1.onrender.com/api/v1/placeholder?text='
-        cur.execute("""UPDATE Productos SET imagen_url = CONCAT(%s, REPLACE(nombre, ' ', '+'), '&w=400&h=400')"""
+        cur.execute("""UPDATE Productos SET imagen_url = CONCAT(%s,
+            TRANSLATE(nombre, ' áéíóúñÁÉÍÓÚÑ', '-aeiounAEIOUN'), '&w=400&h=400')""",
+            (base,))
         conn.commit()
-        logger.info("Imágenes placeholder actualizadas")
+        logger.info("Imágenes placeholder actualizadas (todos los registros)")
     except Exception as e:
         conn.rollback()
         logger.warning(f"Error actualizando imágenes: {e}")
