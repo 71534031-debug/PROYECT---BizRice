@@ -63,7 +63,7 @@ import { ToastService } from '../../services/toast.service';
             @for (b of businesses(); track b.id_emprendimiento) {
               <tr>
                 <td class="fw-semibold small">{{ b.nombre }}</td>
-                <td><span class="badge bg-primary bg-opacity-10 text-primary">{{ b.categoria }}</span></td>
+                <td><span class="badge bg-primary text-white">{{ b.categoria }}</span></td>
                 <td class="small">{{ b.propietario?.nombre + ' ' + b.propietario?.apellido || '—' }}</td>
                 <td class="small text-muted">{{ formatDate(b.fecha_registro) }}</td>
                 <td>

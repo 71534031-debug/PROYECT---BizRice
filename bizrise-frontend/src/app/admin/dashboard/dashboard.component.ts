@@ -97,7 +97,7 @@ import { ToastService } from '../../services/toast.service';
                 @for (sol of solicitudes(); track sol.id_emprendimiento) {
                   <tr>
                     <td class="fw-semibold small">{{ sol.nombre }}</td>
-                    <td><span class="badge bg-primary bg-opacity-10 text-primary">{{ sol.categoria }}</span></td>
+                    <td><span class="badge bg-primary text-white">{{ sol.categoria }}</span></td>
                     <td class="small text-muted">{{ formatDate(sol.fecha_registro) }}</td>
                     <td>
                       <div class="d-flex gap-1 action-btn-group">
