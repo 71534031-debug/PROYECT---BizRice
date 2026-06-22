@@ -306,7 +306,7 @@ def _seed_pending_businesses():
         cur = conn.cursor()
         cur.execute("SELECT COUNT(*) FROM Emprendimientos WHERE estado_verificacion = 'pendiente'")
         if cur.fetchone()[0] > 0:
-            conn.close()
+            cur.close()
             return
 
         cur.execute("SELECT id_usuario FROM Usuarios WHERE correo = 'marco.solis@email.com'")
