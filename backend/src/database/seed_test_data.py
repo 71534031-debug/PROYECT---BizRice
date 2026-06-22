@@ -11,7 +11,7 @@ Ejecutar desde backend/:
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
-import pyodbc
+import psycopg2
 from passlib.hash import bcrypt
 from datetime import date, timedelta
 from src.config.settings import settings
@@ -19,15 +19,7 @@ from src.repositories import UserRepository, BusinessRepository, ProductReposito
 
 
 def get_conn():
-    driver = settings.DB_DRIVER
-    conn_str = (
-        f"DRIVER={{{driver}}};"
-        f"SERVER={settings.DB_SERVER};"
-        f"DATABASE={settings.DB_NAME};"
-        f"UID={settings.DB_USER};"
-        f"PWD={settings.DB_PASSWORD}"
-    )
-    return pyodbc.connect(conn_str, autocommit=True)
+    return psycopg2.connect(settings.DATABASE_URL)
 
 
 def seed():

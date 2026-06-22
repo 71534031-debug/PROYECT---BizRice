@@ -106,8 +106,7 @@ def asegurar_categorias(session):
     return ids
 
 def main():
-    conn_str = settings.DATABASE_URL.replace("mssql+pyodbc://", "mssql+pyodbc://")
-    engine = create_engine(conn_str, echo=False)
+    engine = create_engine(settings.DATABASE_URL, echo=False)
     created = 0
 
     with Session(engine) as session:
@@ -131,7 +130,7 @@ def main():
 
             session.execute(text("""
                 INSERT INTO Usuarios (nombre, apellido, correo, contrasena_hash, rol, estado, fecha_registro)
-                VALUES (:nom, :ape, :cor, :pwd, 'emprendedor', 'activo', GETDATE())
+                VALUES (:nom, :ape, :cor, :pwd, 'emprendedor', 'activo', NOW())
             """), {
                 "nom": p["nombre"], "ape": p["apellido"],
                 "cor": p["correo"], "pwd": PASSWORD,
@@ -146,7 +145,7 @@ def main():
 
             session.execute(text("""
                 INSERT INTO Emprendimientos (id_usuario, id_categoria, nombre, descripcion, telefono, direccion, distrito, estado_verificacion, fecha_registro)
-                VALUES (:uid, :cat, :nom, :desc, :tel, :dir, :dis, 'pendiente', GETDATE())
+                VALUES (:uid, :cat, :nom, :desc, :tel, :dir, :dis, 'pendiente', NOW())
             """), {
                 "uid": uid, "cat": cat_id,
                 "nom": p["negocio"], "desc": p["descripcion"],

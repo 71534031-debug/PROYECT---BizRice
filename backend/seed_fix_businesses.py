@@ -131,7 +131,7 @@ def main():
             else:
                 session.execute(text("""
                     INSERT INTO Usuarios (nombre, apellido, correo, contrasena_hash, rol, estado, fecha_registro)
-                    VALUES (:nom, :ape, :cor, :pwd, 'emprendedor', 'activo', GETDATE())
+                    VALUES (:nom, :ape, :cor, :pwd, 'emprendedor', 'activo', NOW())
                 """), {
                     "nom": data["nombre"], "ape": data["apellido"],
                     "cor": data["correo"], "pwd": PASSWORD,
@@ -148,7 +148,7 @@ def main():
 
             session.execute(text("""
                 INSERT INTO Emprendimientos (id_usuario, id_categoria, nombre, descripcion, telefono, direccion, distrito, imagen_portada_url, estado_verificacion, fecha_registro)
-                VALUES (:uid, :cat, :nom, :desc, :tel, :dir, :dis, :img, 'aprobado', GETDATE())
+                VALUES (:uid, :cat, :nom, :desc, :tel, :dir, :dis, :img, 'aprobado', NOW())
             """), {
                 "uid": uid, "cat": cat_id,
                 "nom": data["negocio"], "desc": data["descripcion"],

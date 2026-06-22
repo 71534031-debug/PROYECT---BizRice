@@ -1,17 +1,17 @@
 version: "3.8"
 
 services:
-  sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: bizrise-sqlserver
+  postgres:
+    image: postgres:16-alpine
+    container_name: bizrise-postgres
     environment:
-      ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "BizRise_Admin2026!"
-      MSSQL_PID: "Developer"
+      POSTGRES_DB: BizRiseDB
+      POSTGRES_USER: bizrise
+      POSTGRES_PASSWORD: BizRise_Admin2026!
     ports:
-      - "1433:1433"
+      - "5432:5432"
     volumes:
-      - sqlserver-data:/var/opt/mssql
+      - postgres-data:/var/lib/postgresql/data
 
 volumes:
-  sqlserver-data:
+  postgres-data:

@@ -77,20 +77,10 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 
-def auto_seed():
-    try:
-        from seed_full import seed
-        logger.info("Ejecutando seed automatico...")
-        seed()
-        logger.info("Seed completado.")
-    except Exception as e:
-        logger.warning(f"Seed omitido: {e}")
-
-
 @app.on_event("startup")
 def startup():
     Base.metadata.create_all(bind=engine)
-    auto_seed()
+    logger.info("Tablas creadas/verificadas en PostgreSQL")
 
 
 @app.get("/")
